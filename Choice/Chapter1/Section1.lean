@@ -88,26 +88,26 @@ section
   /-! ### Basic relation properties -/
   section basic
     class Rel.Refl where
-      refl [InDom R a] : R a a
+      refl [R.InDom a] : R a a
 
     class Rel.Total where
-      total [InDom R a] :
+      total [R.InDom a] [R.InDom a'] :
         a ≠ a' → (R a a' ∨ R a' a)
 
     class Rel.Trans where
-      trans [InDom R a] :
+      trans [R.InDom a] [R.InDom a'] [R.InDom a''] :
         R a a' → R a' a'' → R a a''
 
     class Rel.AntiSym where
-      antiSym [InDom R a] :
+      antiSym [R.InDom a] [R.InDom a'] :
         R a a' → R a' a → a = a'
 
     class Rel.Asym where
-      asym [InDom R a] :
+      asym [R.InDom a] [R.InDom a'] :
         R a a' → ¬ R a' a
 
     class Rel.Sym where
-      sym [InDom R a] :
+      sym [R.InDom a] [R.InDom a'] :
         R a a' → R a' a
   end basic
 
