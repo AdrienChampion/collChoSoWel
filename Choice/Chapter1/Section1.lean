@@ -53,7 +53,7 @@ def Rel.nemptyListDom
 /-- Encodes that `a ∈ R.Dom`.
 
 Having this typeclass avoids passing `a ∈ R.Dom` everywhere, and lets us mostly forget about it. -/
-class Rel.InDom (R : Rel α) (a : α) where
+class Rel.InDom (R : Rel α) (a : α) : Prop where
   inDom : a ∈ R
 
 instance
@@ -70,7 +70,7 @@ def Rel.InDom.toInList
 : a ∈ R.listDom :=
   I.iso.mpr instInDom.inDom
 
-def Rel.inListToInDom
+def Rel.InDom.ofInList
   {R : Rel α}
   [I : Set.Finite R.Dom]
   {a : α}

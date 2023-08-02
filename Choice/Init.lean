@@ -1,5 +1,8 @@
 import Lean.Data.HashMap
 
+import Std.Logic
+import Std.Data.List.Lemmas
+
 
 
 /-! # Useful types and helpers -/
@@ -23,27 +26,6 @@ section list
   : (head :: tail).leftMost default max
   = max head (tail.leftMost default max) := by
     simp [leftMost]
-
-  theorem List.cons_ne_nil : hd::tl ≠ [] := by
-    intro
-    contradiction
-
-  -- theorem List.leftMost_max
-  --   {max : α → α → α}
-  --   {res : α}
-  --   {list : List α}
-  --   {default : α}
-  --   (res_def : res = list.leftMost default max)
-  -- : ∀ (a : α), a ∈ list → max res a = res := by
-  --   intro a
-  --   intro h_aInList
-  --   cases h_aInList with
-  --   | head tail' =>
-  --     simp [leftMost] at res_def
-  --     rewrite [res_def], 2
-  --     sorry
-  --   | tail =>
-  --     sorry
 end list
 
 

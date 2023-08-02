@@ -41,7 +41,7 @@ instance [instTrans : R.Trans] : R.P.Trans where
 
 
 
-/-- `I`ndecisiveness, decidable.
+/-- `I`ndifference, decidable.
 
 - reflexive if `R.Refl`
 - transitive if `R.Trans`
@@ -83,25 +83,33 @@ variable
 
 /-- Nothing is more prefered. -/
 @[simp]
-abbrev Rel.max : Prop :=
+abbrev Rel.max
+  (a : α) [R.InDom a]
+: Prop :=
   ∀ (a' : α), [InDom R a'] → ¬ R.P a' a
 
 /-- `M`aximal set, see `Rel.max`. -/
-abbrev Rel.M : Set α :=
-  R.max
+abbrev Rel.M
+  (a : α) [R.InDom a]
+: Prop :=
+  R.max a
 
 /-- All are prefered. -/
 @[simp]
-abbrev Rel.best : Prop :=
+abbrev Rel.best
+  (a : α) [R.InDom a]
+: Prop :=
   ∀ (a' : α), [InDom R a'] → R a a'
 
 /-- `C`hoice set, see `Rel.best`. -/
-abbrev Rel.C : Set α :=
-  R.best
+abbrev Rel.C
+  (a : α) [R.InDom a]
+: Prop :=
+  R.best a
 
 /-- Best implies max, but not the other way around. -/
 theorem Rel.max_of_best
-  (a : α)
+  (a : α) [R.InDom a]
 : R.C a → R.M a :=
   fun h_best a' _ h_P_a'a =>
     h_P_a'a.right $ h_best a'
