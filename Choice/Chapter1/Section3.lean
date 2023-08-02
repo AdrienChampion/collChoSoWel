@@ -140,6 +140,19 @@ section lemma_1_b
     intro a instInDom_a
     apply R.listMaxP_max R.listDom R.nemptyListDom a instInDom_a.toInList
       (fun _ h_a_dom => InDom.ofInList h_a_dom)
+
+
+
+  /- Lemma 1.b.
+  
+  Original formulation omits the necessary assumption that `R.Dom ≠ ∅`. -/
+  theorem Rel.lemma_1_b
+    (R : Rel α)
+    [R.PreOrder]
+    [Set.Finite R.Dom]
+    [Set.NEmpty R.Dom]
+  : R.max R.getMax :=
+    R.getMax_max
 end lemma_1_b
 
 
@@ -222,7 +235,7 @@ end lemma_1_c
 
 
 section lemma_1_d
-  theorem lemma_1_d
+  theorem Rel.lemma_1_d
     (R : Rel α)
     [R.PreOrder]
     (best : α)
@@ -246,3 +259,44 @@ section lemma_1_d
       intro y yInDom
       apply R.trans (a' := best) h_aMax_R_best $ h_best y
 end lemma_1_d
+
+
+
+section lemma_1_e
+  theorem Rel.lemma_1_e_mpr
+    (R : Rel α)
+    [R.PreOrder]
+    [Set.Finite R.Dom]
+  : (∀ (a : α), [R.InDom a] → R.C a ↔ R.M a)
+  → (x y : α) → [R.InDom x] → [R.InDom y]
+  → R.M x → R.M y
+  → R.I x y := fun h_C_eq_M x y _ _ h_Max_x h_Max_y =>
+    let h_C_x :=
+      (h_C_eq_M x).mpr h_Max_x
+    let h_C_y :=
+      (h_C_eq_M y).mpr h_Max_y
+    ⟨h_C_x y, h_C_y x⟩
+
+  theorem Rel.lemma_1_e_mp
+    (R : Rel α)
+    [R.PreOrder]
+    [Set.Finite R.Dom]
+    [Set.NEmpty R.Dom]
+  : (∀ (x y : α), [R.InDom x] → [R.InDom y] → R.M x → R.M y → R.I x y)
+  → ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a := by
+    intro get_I_of_M max _
+    apply Iff.intro $ R.max_of_best max
+    intro h_M_max
+    simp
+    intro a' _
+    let h := h_M_max a'
+    simp only [Rel.P, Decidable.not_and_iff_or_not] at h
+    cases h
+    case inl h_not_a'_R_a =>
+      apply Decidable.byContradiction
+      sorry
+    case inr h_a_R_a' =>
+      apply Decidable.byContradiction
+      intro h
+      exact h_a_R_a' h
+end lemma_1_e

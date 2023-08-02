@@ -84,8 +84,9 @@ variable
 /-- Nothing is more prefered. -/
 @[simp]
 abbrev Rel.max
-  (a : α) [R.InDom a]
+  (a : α) [I : R.InDom a]
 : Prop :=
+  let _ := I
   ∀ (a' : α), [InDom R a'] → ¬ R.P a' a
 
 /-- `M`aximal set, see `Rel.max`. -/
@@ -94,12 +95,65 @@ abbrev Rel.M
 : Prop :=
   R.max a
 
-/-- All are prefered. -/
+/-- Prefered to all. -/
 @[simp]
 abbrev Rel.best
   (a : α) [R.InDom a]
 : Prop :=
   ∀ (a' : α), [InDom R a'] → R a a'
+
+def Rel.isBestOf
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+: List α → Bool
+| [] => true
+| hd::tl =>
+  if R a hd then R.isBestOf a tl else false
+
+theorem Rel.isBestOf_best
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+  (list : List α)
+: R.isBestOf a list → ∀ (a' : α), a' ∈ list → R a a' := by
+  induction list with
+  | nil =>
+    intro _ _ _
+    contradiction
+  | cons hd tl ih =>
+    intro h_isBestOf a' a'_dom
+    revert h_isBestOf
+    simp [isBestOf]
+    if h : R a hd
+    then
+      simp [h]
+      intro h_isBestOf
+      let h_sub_max := ih h_isBestOf
+      cases a'_dom ; exact h
+      case tail a'_dom =>
+        exact h_sub_max a' a'_dom
+    else simp [h]
+
+def Rel.isBest
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+: Bool :=
+  R.isBestOf a R.listDom
+
+theorem Rel.isBest_best
+  (R : Rel α)
+  [I : Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+: R.isBest a → R.best a := by
+  intro h_isBest
+  let h := R.isBestOf_best a R.listDom h_isBest
+  simp [best]
+  intro a' a'InDom
+  apply h a' $ I.iso.mpr a'InDom.inDom
+
+
 
 /-- `C`hoice set, see `Rel.best`. -/
 abbrev Rel.C
