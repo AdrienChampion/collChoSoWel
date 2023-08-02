@@ -62,6 +62,14 @@ instance
 : R.InDom R.default where
   inDom := I.inSet
 
+def Rel.InDom.toInList
+  {R : Rel α}
+  [I : Set.Finite R.Dom]
+  (a : α)
+  [instInDom : R.InDom a]
+: a ∈ R.listDom :=
+  I.iso.mpr instInDom.inDom
+
 def Rel.inListToInDom
   {R : Rel α}
   [I : Set.Finite R.Dom]
@@ -89,26 +97,44 @@ section
   section basic
     class Rel.Refl where
       refl [R.InDom a] : R a a
+    
+    def Rel.refl :=
+      @Rel.Refl.refl
 
     class Rel.Total where
       total [R.InDom a] [R.InDom a'] :
         a ≠ a' → (R a a' ∨ R a' a)
 
+    def Rel.total :=
+      @Rel.Total.total
+
     class Rel.Trans where
       trans [R.InDom a] [R.InDom a'] [R.InDom a''] :
         R a a' → R a' a'' → R a a''
 
+    def Rel.trans :=
+      @Rel.Trans.trans
+
     class Rel.AntiSym where
       antiSym [R.InDom a] [R.InDom a'] :
         R a a' → R a' a → a = a'
+    
+    def Rel.antiSym :=
+      @Rel.AntiSym.antiSym
 
     class Rel.Asym where
       asym [R.InDom a] [R.InDom a'] :
         R a a' → ¬ R a' a
+    
+    def Rel.asym :=
+      @Rel.Asym.asym
 
     class Rel.Sym where
       sym [R.InDom a] [R.InDom a'] :
         R a a' → R a' a
+    
+    def Rel.sym :=
+      @Rel.Sym.sym
   end basic
 
 
@@ -122,6 +148,8 @@ section
     instance [R.Refl] [R.Trans] : R.PreOrder where
       toRefl := inferInstance
       toTrans := inferInstance
+    instance instTrans_of_PreOrder [I : R.PreOrder] : R.Trans :=
+      I.toTrans
 
 
 

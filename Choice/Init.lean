@@ -24,6 +24,10 @@ section list
   = max head (tail.leftMost default max) := by
     simp [leftMost]
 
+  theorem List.cons_ne_nil : hd::tl ≠ [] := by
+    intro
+    contradiction
+
   -- theorem List.leftMost_max
   --   {max : α → α → α}
   --   {res : α}

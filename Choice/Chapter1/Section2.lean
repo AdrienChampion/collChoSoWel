@@ -10,10 +10,10 @@ namespace Choice
 variable
   (R : Rel α)
 
-/-- `P`reference, decidable.
+/-- **Strict** `P`reference, decidable.
 
 - not reflexive
-- transitive if `R` is transitive
+- transitive if `R.Trans`
 -/
 abbrev Rel.P : Rel α where
   Dom := R.Dom
@@ -37,15 +37,42 @@ instance [instTrans : R.Trans] : R.P.Trans where
     fun h_a''a =>
       let h_a'a := instTrans.trans h₂.left h_a''a
       h₁.right h_a'a
-  ⟩ 
+  ⟩
 
 
 
-/-- `I`ndecisiveness, decidable. -/
+/-- `I`ndecisiveness, decidable.
+
+- reflexive if `R.Refl`
+- transitive if `R.Trans`
+-/
 abbrev Rel.I : Rel α where
   Dom := R.Dom
   R a a' := R a a' ∧ R a' a
   decidable := inferInstance
+
+theorem Rel.I_Dom : R.Dom = R.I.Dom :=
+  rfl
+instance [I : R.I.InDom a] : R.InDom a where
+  inDom := I.inDom
+instance [I : R.InDom a] : R.I.InDom a where
+  inDom := I.inDom
+
+instance [instRefl : R.Refl] : R.I.Refl where
+  refl {a : α} [R.I.InDom a] := ⟨
+    instRefl.refl,
+    instRefl.refl
+  ⟩
+
+instance [instTrans : R.Trans] : R.I.Trans where
+  trans
+    {a a' a'' : α} [R.I.InDom a] [R.I.InDom a'] [R.I.InDom a'']
+    (h₁ : R.I a a')
+    (h₂ : R.I a' a'')
+  := ⟨
+    instTrans.trans h₁.left h₂.left,
+    instTrans.trans h₂.right h₁.right
+  ⟩
 
 
 
