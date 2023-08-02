@@ -87,7 +87,7 @@ section lemma_1_b
     | [max] => by
       let h_a_eq : a = max := by
         cases h_a_dom ; rfl ; contradiction
-      simp [h_a_eq, listMaxP]
+      simp [h_a_eq, listMaxP, R.P_irrefl]
     | hd::hd'::tl => by
       let hd_in_dom :=
         allInDom hd (List.Mem.head (hd'::tl))
@@ -118,7 +118,7 @@ section lemma_1_b
   : α :=
     R.listMaxP R.listDom R.nemptyListDom
   
-  instance
+  instance Rel.getMax_InDom
     (R : Rel α)
     [R.PreOrder]
     [Set.Finite R.Dom]
@@ -136,7 +136,8 @@ section lemma_1_b
     [Set.Finite R.Dom]
     [Set.NEmpty R.Dom]
   : R.max R.getMax := by
-    simp only [Rel.M, Membership.mem, Set.mem]
+    simp only [Rel.M, Membership.mem, max]
+    apply And.intro R.getMax_InDom
     intro a instInDom_a
     apply R.listMaxP_max R.listDom R.nemptyListDom a instInDom_a.toInList
       (fun _ h_a_dom => InDom.ofInList h_a_dom)
@@ -161,10 +162,11 @@ section lemma_1_c
   theorem Rel.lemma_1_c_mp₁
     (R : Rel α)
     [R.Refl]
-    {a a' : α} [R.InDom a] [R.InDom a']
+    {a a' : α} [aInDom : R.InDom a] [R.InDom a']
     (h_Dom : (x : α) → [R.InDom x] → x = a ∨ x = a')
   : R.P a a' → R.C a := by
     intro h_a_P_a'
+    apply And.intro aInDom
     intro x xInDom
     cases h_Dom x with
     | inl h_eq =>
@@ -185,27 +187,28 @@ section lemma_1_c
       assumption
     case inr h_eq =>
       let h_not_a_R_a' := h_a_P_a'.right
-      let h_a_R_a' := h_eq ▸ h_x_max a
+      let h_a_R_a' := h_eq ▸ h_x_max.right a
       contradiction
 
   theorem Rel.lemma_1_c_mpr
     (R : Rel α)
     [R.Refl]
     [Set.Finite R.Dom]
-    {a a' : α} [R.InDom a] [R.InDom a']
+    {a a' : α} [R.InDom a] [a'InDom : R.InDom a']
     (h_ne : a ≠ a')
     (h_Dom : (x : α) → [R.InDom x] → x = a ∨ x = a')
     (h₁ : R.C a)
     (h₂ : (x : α) → [R.InDom x] → R.C x → x = a)
   : R.P a a' := by
     simp
-    apply And.intro $ h₁ a'
+    apply And.intro $ h₁.right a'
     intro h_a'_R_a
-    let h : R.C a' :=
-      fun x xInDom => by
-        cases h_Dom x
-        case inl h_eq => rw [h_eq] ; exact h_a'_R_a
-        case inr h_eq => rw [h_eq] ; exact R.refl
+    let h : R.C a' := by
+      apply And.intro a'InDom
+      intro x xInDom
+      cases h_Dom x
+      case inl h_eq => rw [h_eq] ; exact h_a'_R_a
+      case inr h_eq => rw [h_eq] ; exact R.refl
     rw [h₂ a' h] at h_ne
     contradiction
 
@@ -242,22 +245,23 @@ section lemma_1_d
     [R.InDom best]
     (h_best : R.C best)
   : ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a := by
-    intro aMax h_aMax_Dom
+    intro aMax aMaxInDom
     constructor
     · exact R.max_of_best aMax -- `aMax` is actually a *best* here, not a *max*
-    · simp only [Rel.M, Rel.C]
+    · simp only [M, C]
       unfold Rel.max
       unfold Rel.best
       intro h_Max
       let h_aMax_R_best : R aMax best := by
         let h_best_R_aMax :=
-          h_best aMax
+          h_best.right aMax
         let h_not_best_P_aMax :=
-          h_Max best
-        simp at h_not_best_P_aMax
+          h_Max.right best
+        simp [P] at h_not_best_P_aMax
         exact h_not_best_P_aMax h_best_R_aMax |> Decidable.not_not.mp
+      apply And.intro aMaxInDom
       intro y yInDom
-      apply R.trans (a' := best) h_aMax_R_best $ h_best y
+      apply R.trans (a' := best) h_aMax_R_best $ h_best.right y
 end lemma_1_d
 
 
@@ -275,7 +279,7 @@ section lemma_1_e
       (h_C_eq_M x).mpr h_Max_x
     let h_C_y :=
       (h_C_eq_M y).mpr h_Max_y
-    ⟨h_C_x y, h_C_y x⟩
+    ⟨h_C_x.right y, h_C_y.right x⟩
 
   theorem Rel.lemma_1_e_mp
     (R : Rel α)
@@ -284,12 +288,14 @@ section lemma_1_e
     [Set.NEmpty R.Dom]
   : (∀ (x y : α), [R.InDom x] → [R.InDom y] → R.M x → R.M y → R.I x y)
   → ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a := by
-    intro get_I_of_M max _
+    intro get_I_of_M max maxInDom
     apply Iff.intro $ R.max_of_best max
     intro h_M_max
     simp
+    simp [Membership.mem]
+    apply And.intro maxInDom
     intro a' _
-    let h := h_M_max a'
+    let h := h_M_max.right a'
     simp only [Rel.P, Decidable.not_and_iff_or_not] at h
     cases h
     case inl h_not_a'_R_a =>

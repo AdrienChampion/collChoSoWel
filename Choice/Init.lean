@@ -103,6 +103,7 @@ section set
 
 
 
+  @[simp]
   def Set.mem : Prop :=
     set a
 

@@ -17,6 +17,14 @@ structure Rel (α : Type u) where
 
 
 
+/-- Encodes that `a ∈ R.Dom`.
+
+Having this typeclass avoids passing `a ∈ R.Dom` everywhere, and lets us mostly forget about it. -/
+class Rel.InDom (R : Rel α) (a : α) : Prop where
+  inDom : R.Dom a
+
+
+
 instance : CoeFun (Rel α) (fun _ => α → α → Prop) where
   coe rel := rel.R
 
@@ -27,12 +35,23 @@ instance {R : Rel α} : Decidable (R a a') :=
   R.decidable
 
 instance : Membership α (Rel α) where
-  mem a rel := a ∈ rel.Dom
+  mem a rel := rel.InDom a
 
 
 
 def Rel.listDom (R : Rel α) [I : Set.Finite R.Dom] : List α :=
   I.toList
+
+def Rel.listDomIso
+  (R : Rel α)
+  [I : Set.Finite R.Dom]
+: ∀ {a : α}, a ∈ R.listDom ↔ R.InDom a :=
+  ⟨
+    fun a_dom =>
+      ⟨I.iso.mp a_dom⟩,
+    fun aInDom =>
+      I.iso.mpr aInDom.inDom
+  ⟩
 
 def Rel.default (R : Rel α) [I : Set.NEmpty R.Dom] : α :=
   I.default
@@ -49,12 +68,6 @@ def Rel.nemptyListDom
   contradiction
 
 
-
-/-- Encodes that `a ∈ R.Dom`.
-
-Having this typeclass avoids passing `a ∈ R.Dom` everywhere, and lets us mostly forget about it. -/
-class Rel.InDom (R : Rel α) (a : α) : Prop where
-  inDom : a ∈ R
 
 instance
   {R : Rel α}

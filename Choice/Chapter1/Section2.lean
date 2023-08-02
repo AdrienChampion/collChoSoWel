@@ -15,10 +15,13 @@ variable
 - not reflexive
 - transitive if `R.Trans`
 -/
-abbrev Rel.P : Rel α where
+def Rel.P : Rel α where
   Dom := R.Dom
   R a a' := R a a' ∧ ¬ R a' a
   decidable := inferInstance
+
+def Rel.P_irrefl : ¬ R.P a a := by
+  simp [P]
 
 theorem Rel.P_Dom : R.Dom = R.P.Dom :=
   rfl
@@ -46,7 +49,7 @@ instance [instTrans : R.Trans] : R.P.Trans where
 - reflexive if `R.Refl`
 - transitive if `R.Trans`
 -/
-abbrev Rel.I : Rel α where
+def Rel.I : Rel α where
   Dom := R.Dom
   R a a' := R a a' ∧ R a' a
   decidable := inferInstance
@@ -84,23 +87,108 @@ variable
 /-- Nothing is more prefered. -/
 @[simp]
 abbrev Rel.max
-  (a : α) [I : R.InDom a]
+  (a : α)
 : Prop :=
-  let _ := I
-  ∀ (a' : α), [InDom R a'] → ¬ R.P a' a
+  InDom R a ∧ (∀ (a' : α) [R.InDom a'], ¬ R.P a' a)
 
 /-- `M`aximal set, see `Rel.max`. -/
-abbrev Rel.M
+abbrev Rel.M : Set α :=
+  R.max
+
+def Rel.isMaxOf
+  (R : Rel α)
+  [Set.Finite R.Dom]
   (a : α) [R.InDom a]
-: Prop :=
-  R.max a
+: List α → Bool
+| [] => true
+| hd::tl =>
+  if R.P hd a then false else R.isMaxOf a tl
+
+theorem Rel.isMaxOf_max_mp
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+  (list : List α)
+: R.isMaxOf a list → ∀ (a' : α), a' ∈ list → ¬ R.P a' a := by
+  intro h_isMaxOf a' a'_dom
+  induction list with
+  | nil =>
+    contradiction
+  | cons hd tl ih =>
+    simp only [isMaxOf] at h_isMaxOf
+    if h : R.P hd a
+    then simp [h] at h_isMaxOf
+    else
+      simp only [] at h
+      simp [h] at h_isMaxOf
+      cases a'_dom
+      · exact h
+      case tail h_a'_dom =>
+        exact ih h_isMaxOf h_a'_dom
+
+theorem Rel.isMaxOf_max_mpr
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+  (list : List α)
+: (∀ (a' : α), a' ∈ list → ¬ R.P a' a) → R.isMaxOf a list := by
+  intro h_max
+  cases list with
+  | nil =>
+    simp [isMaxOf]
+  | cons head tail =>
+    simp only [isMaxOf]
+    simp [h_max head (List.mem_cons_self _ _)]
+    apply R.isMaxOf_max_mpr a tail
+    intro a' a'_dom
+    exact h_max a' (List.Mem.tail _ a'_dom)
+
+theorem Rel.isMaxOf_max
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+  (list : List α)
+: R.isMaxOf a list ↔ (∀ (a' : α), a' ∈ list → ¬ R.P a' a) :=
+  ⟨R.isMaxOf_max_mp a list, R.isMaxOf_max_mpr a list⟩
+
+def Rel.isMax
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+: Bool :=
+  R.isMaxOf a R.listDom
+
+def Rel.isMax_max
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [aInDom : R.InDom a]
+: R.isMax a ↔ a ∈ R.M := by
+  constructor
+  · intro h_isMax
+    let h := (R.isMaxOf_max a R.listDom).mp h_isMax
+    simp only [Membership.mem, Set.mem, M, max]
+    apply And.intro aInDom
+    intro a' a'InDom
+    apply h a' $ R.listDomIso.mpr a'InDom
+  · intro h_M_a
+    simp [Membership.mem, Set.mem, M, max] at h_M_a
+    apply (R.isMaxOf_max a R.listDom).mpr
+    intro a' h_a'_dom
+    let a'InDom := R.listDomIso.mp h_a'_dom
+    exact h_M_a.right a'
+
+
 
 /-- Prefered to all. -/
 @[simp]
 abbrev Rel.best
-  (a : α) [R.InDom a]
+  (a : α)
 : Prop :=
-  ∀ (a' : α), [InDom R a'] → R a a'
+  InDom R a ∧ (∀ (a' : α) [InDom R a'], R a a')
+
+/-- `C`hoice set, see `Rel.best`. -/
+abbrev Rel.C : Set α :=
+  R.best
 
 def Rel.isBestOf
   (R : Rel α)
@@ -111,7 +199,7 @@ def Rel.isBestOf
 | hd::tl =>
   if R a hd then R.isBestOf a tl else false
 
-theorem Rel.isBestOf_best
+theorem Rel.isBestOf_best_mp
   (R : Rel α)
   [Set.Finite R.Dom]
   (a : α) [R.InDom a]
@@ -135,6 +223,31 @@ theorem Rel.isBestOf_best
         exact h_sub_max a' a'_dom
     else simp [h]
 
+theorem Rel.isBestOf_best_mpr
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+  (list : List α)
+: (∀ (a' : α), a' ∈ list → R a a') → R.isBestOf a list := by
+  intro h_best
+  cases list with
+  | nil =>
+    simp [isBestOf]
+  | cons head tail =>
+    simp only [isBestOf]
+    simp [h_best head (List.mem_cons_self _ _)]
+    apply R.isBestOf_best_mpr a tail
+    intro a' a'_dom
+    exact h_best a' (List.Mem.tail _ a'_dom)
+
+theorem Rel.isBestOf_best
+  (R : Rel α)
+  [Set.Finite R.Dom]
+  (a : α) [R.InDom a]
+  (list : List α)
+: R.isBestOf a list ↔ (∀ (a' : α), a' ∈ list → R a a') :=
+  ⟨R.isBestOf_best_mp a list, R.isBestOf_best_mpr a list⟩
+
 def Rel.isBest
   (R : Rel α)
   [Set.Finite R.Dom]
@@ -145,25 +258,30 @@ def Rel.isBest
 theorem Rel.isBest_best
   (R : Rel α)
   [I : Set.Finite R.Dom]
-  (a : α) [R.InDom a]
-: R.isBest a → R.best a := by
-  intro h_isBest
-  let h := R.isBestOf_best a R.listDom h_isBest
-  simp [best]
-  intro a' a'InDom
-  apply h a' $ I.iso.mpr a'InDom.inDom
+  (a : α) [aInDom : R.InDom a]
+: R.isBest a ↔ a ∈ R.C := by
+  simp [Membership.mem]
+  constructor
+  · intro h_isBest
+    let h := (R.isBestOf_best a R.listDom).mp h_isBest
+    simp [best]
+    apply And.intro aInDom
+    intro a' a'InDom
+    apply h a' $ I.iso.mpr a'InDom.inDom
+  · intro h_C_a
+    apply (R.isBestOf_best a R.listDom).mpr
+    intro a' h_a'_dom
+    let a'InDom := R.listDomIso.mp h_a'_dom
+    exact h_C_a.right a'
 
 
-
-/-- `C`hoice set, see `Rel.best`. -/
-abbrev Rel.C
-  (a : α) [R.InDom a]
-: Prop :=
-  R.best a
 
 /-- Best implies max, but not the other way around. -/
 theorem Rel.max_of_best
-  (a : α) [R.InDom a]
-: R.C a → R.M a :=
-  fun h_best a' _ h_P_a'a =>
-    h_P_a'a.right $ h_best a'
+  (a : α)
+: a ∈ R.C → a ∈ R.M := by
+  simp [Membership.mem]
+  intro aInDom h_best
+  apply And.intro aInDom
+  intro a' _ h_a'_P_a
+  exact h_a'_P_a.right $ h_best a'
