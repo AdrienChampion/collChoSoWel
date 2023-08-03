@@ -167,7 +167,7 @@ section max
       intro a' a'_dom
       exact h_max a' (List.Mem.tail _ a'_dom)
 
-  theorem Rel.isMaxOf_max
+  theorem Rel.isMaxOf_iff_max
     (R : Rel α)
     [Set.Finite R.Dom]
     (a : α) [R.InDom a]
@@ -182,24 +182,39 @@ section max
   : Bool :=
     R.isMaxOf a R.listDom
 
-  def Rel.isMax_iff_max
-    (R : Rel α)
+  theorem Rel.isMax_iff_max
+    {R : Rel α}
     [Set.Finite R.Dom]
-    (a : α) [aInDom : R.InDom a]
+    {a : α} [aInDom : R.InDom a]
   : R.isMax a ↔ a ∈ R.M := by
     constructor
     · intro h_isMax
-      let h := (R.isMaxOf_max a R.listDom).mp h_isMax
+      let h := (R.isMaxOf_iff_max a R.listDom).mp h_isMax
       simp only [Membership.mem, Set.mem, M, max]
       apply And.intro aInDom
       intro a' a'InDom
       apply h a' $ R.listDomIso.mpr a'InDom
     · intro h_M_a
       simp [Membership.mem, Set.mem, M, max] at h_M_a
-      apply (R.isMaxOf_max a R.listDom).mpr
+      apply (R.isMaxOf_iff_max a R.listDom).mpr
       intro a' h_a'_dom
       let a'InDom := R.listDomIso.mp h_a'_dom
       exact h_M_a.right a'
+
+  instance
+    (R : Rel α)
+    [Set.Finite R.Dom]
+    (a : α) [R.InDom a]
+  : Decidable (a ∈ R.M) :=
+    if h : R.isMax a
+    then
+      Rel.isMax_iff_max.mp h
+      |> isTrue
+    else
+      Rel.isMax_iff_max
+      |> not_congr
+      |>.mp h
+      |> isFalse
 end max
 
 
@@ -289,7 +304,7 @@ section best
       intro a' a'_dom
       exact h_best a' (List.Mem.tail _ a'_dom)
 
-  theorem Rel.isBestOf_best
+  theorem Rel.isBestOf_iff_best
     (R : Rel α)
     [Set.Finite R.Dom]
     (a : α) [R.InDom a]
@@ -305,23 +320,38 @@ section best
     R.isBestOf a R.listDom
 
   theorem Rel.isBest_iff_best
-    (R : Rel α)
+    {R : Rel α}
     [I : Set.Finite R.Dom]
-    (a : α) [aInDom : R.InDom a]
+    {a : α} [aInDom : R.InDom a]
   : R.isBest a ↔ a ∈ R.C := by
     simp [Membership.mem]
     constructor
     · intro h_isBest
-      let h := (R.isBestOf_best a R.listDom).mp h_isBest
+      let h := (R.isBestOf_iff_best a R.listDom).mp h_isBest
       simp [best]
       apply And.intro aInDom
       intro a' a'InDom
       apply h a' $ I.iso.mpr a'InDom.inDom
     · intro h_C_a
-      apply (R.isBestOf_best a R.listDom).mpr
+      apply (R.isBestOf_iff_best a R.listDom).mpr
       intro a' h_a'_dom
       let a'InDom := R.listDomIso.mp h_a'_dom
       exact h_C_a.right a'
+
+  instance
+    (R : Rel α)
+    [Set.Finite R.Dom]
+    (a : α) [R.InDom a]
+  : Decidable (a ∈ R.C) :=
+    if h : R.isBest a
+    then
+      Rel.isBest_iff_best.mp h
+      |> isTrue
+    else
+      Rel.isBest_iff_best
+      |> not_congr
+      |>.mp h
+      |> isFalse
 end best
 
 

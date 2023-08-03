@@ -238,6 +238,7 @@ end lemma_1_c
 
 
 section lemma_1_d
+  /-- Lemma 1.d. -/
   theorem Rel.lemma_1_d
     (R : Rel α)
     [R.PreOrder]
