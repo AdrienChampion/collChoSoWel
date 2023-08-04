@@ -125,8 +125,14 @@ section
       trans [R.InDom a] [R.InDom a'] [R.InDom a''] :
         R a a' → R a' a'' → R a a''
 
-    def Rel.trans :=
-      @Rel.Trans.trans
+    def Rel.trans
+      [R.Trans]
+      {a : α}
+      (a' : α)
+      {a'' : α}
+      [R.InDom a] [R.InDom a'] [R.InDom a'']
+    : R a a' → R a' a'' → R a a'' :=
+      Rel.Trans.trans
 
     class Rel.AntiSym where
       antiSym [R.InDom a] [R.InDom a'] :

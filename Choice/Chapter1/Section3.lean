@@ -104,7 +104,7 @@ section lemma_1_b
             (fun a h => allInDom a $ List.Mem.tail hd h)
         intro h_a_P_hd
         apply h_not_a_P_sub
-        apply R.P.trans (a := a) (a' := hd) h_a_P_hd h_hd_P_sub
+        apply R.P.trans hd h_a_P_hd h_hd_P_sub
       · assumption
       case inr.tail h_hd_P_sub h_a_dom =>
         apply R.listMaxP_max (hd'::tl) (List.cons_ne_nil _ _) a h_a_dom
@@ -148,7 +148,7 @@ section lemma_1_b
   
   Original formulation omits the necessary assumption that `R.Dom ≠ ∅`. -/
   theorem Rel.lemma_1_b
-    (R : Rel α)
+    {R : Rel α}
     [R.PreOrder]
     [Set.Finite R.Dom]
     [Set.NEmpty R.Dom]
@@ -244,7 +244,7 @@ section lemma_1_d
     [R.PreOrder]
     (best : α)
     [R.InDom best]
-    (h_best : R.C best)
+    (h_best : best ∈ R.C)
   : ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a := by
     intro aMax aMaxInDom
     constructor
@@ -263,11 +263,165 @@ section lemma_1_d
       apply And.intro aMaxInDom
       intro y yInDom
       apply R.trans (a' := best) h_aMax_R_best $ h_best.right y
+
+  theorem Rel.lemma_1_d_C_empty
+    (R : Rel α)
+    [R.PreOrder]
+    (h_diff : ¬ ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a)
+  : ¬ ∃ (best : α), R.InDom best ∧ R.C best :=
+    fun ⟨best, _bestInDom, h_C_best⟩ =>
+      R.lemma_1_d best h_C_best
+      |> h_diff
 end lemma_1_d
 
 
 
 section lemma_1_e
+  variable
+    {α : Type u}
+
+  /-- Dependent `P`-chain.
+
+  Input `hd : α` is the head of the chain. The chain itself represents a path from `hd` to (one of)
+  its `R.max`(s). -/
+  inductive Rel.PChainD (R : Rel α) : α → Type u
+  | max : ∀ {a : α}, a ∈ R.M → R.PChainD a
+  | cons : ∀ {a : α} (b : α),
+    [R.InDom a] → [R.InDom b] → R.P b a → R.PChainD b → R.PChainD a
+
+  /-- Encodes that `x` appears in a `PChain`, based on `List.Mem`.
+  
+  Used for encoding and defining `Membership α R.PChain`. -/
+  inductive Rel.PChainD.Mem
+    {R : Rel α}
+    (x : α)
+  : {hd : α} → R.PChainD hd → Prop
+  | max (h : x ∈ R.M) : Mem x (PChainD.max h)
+  | head [R.InDom x] (b : α) [R.InDom b] (h : R.P b x) (tail : R.PChainD b)
+    : Mem x (PChainD.cons b h tail)
+  | tail (a b : α) [R.InDom a] [R.InDom b] (h : R.P b a) (tail : R.PChainD b)
+    : Mem x tail → Mem x (PChainD.cons b h tail)
+
+  instance {R : Rel α} {hd : α} : Membership α (R.PChainD hd) where
+    mem (x : α) := Rel.PChainD.Mem x (hd := hd)
+
+
+  /-- Same as `PChainD` but erases the chain's head from the type parameters. -/
+  structure Rel.PChain (R : Rel α) : Type u where
+    hd : α
+    dep : R.PChainD hd
+
+  /-- Same as `PChainD.Mem` but erases the chain's head from the type parameters.
+  
+  Used for encoding and defining `Membership α R.PChain`. -/
+  abbrev Rel.PChain.Mem
+    {R : Rel α}
+    (x : α)
+    (chain : R.PChain)
+  : Prop :=
+    PChainD.Mem x chain.dep
+
+  instance
+    {R : Rel α}
+  : Membership α R.PChain where
+    mem := Rel.PChain.Mem
+
+
+
+  section
+    variable
+      {α : Type u}
+      {R : Rel α}
+
+    namespace Rel.PChainD
+      theorem all_in_dom
+        {hd : α}
+        (chain : R.PChainD hd)
+        (elm : α)
+      : elm ∈ chain → R.InDom elm
+      | Mem.max h => h.left
+      | Mem.head _b _h _tail => inferInstance
+      | Mem.tail _hd _b _h tail elm_in_tail =>
+        tail.all_in_dom elm elm_in_tail
+
+      theorem head_in_dom
+        {hd : α}
+      : (chain : R.PChainD hd) → hd ∈ chain
+      | max h => Mem.max h
+      | cons b h tail => Mem.head b h tail
+
+      def getMax
+        {hd : α}
+      : R.PChainD hd → α
+      | max _h_M_hd => hd
+      | cons _ _ tail =>
+        getMax tail
+
+      theorem getMax_cons
+        {a b : α} [R.InDom a] [R.InDom b]
+        {h : R.P b a}
+        {tail : R.PChainD b}
+      : (Rel.PChainD.cons b h tail).getMax = tail.getMax :=
+        rfl
+
+      theorem getMax_is_max
+        {hd : α}
+      : (chain : R.PChainD hd) → chain.getMax ∈ R.M
+      | max h => h
+      | cons _ _ tail => by
+        rw [getMax_cons]
+        exact getMax_is_max tail
+
+      theorem getMax_in_chain
+        {hd : α}
+      : (chain : R.PChainD hd) → chain.getMax ∈ chain
+      | max h => by
+        exact Mem.max h
+      | cons b h_b_P_a tail => by
+        rw [getMax_cons]
+        apply Mem.tail
+        exact getMax_in_chain tail
+      
+      theorem getMax_InDom
+        {hd : α}
+      : (chain : R.PChainD hd) → R.InDom chain.getMax :=
+        fun chain =>
+          chain.getMax_is_max.left
+
+      theorem getMax_R_all
+        [R.PreOrder]
+        {hd : α}
+        (chain : R.PChainD hd)
+      : ∀ (elm : α), elm ∈ chain → R chain.getMax elm := by
+        -- needed for typeclass resolution in the `head` case
+        let _maxInDom := chain.getMax_InDom
+        intro elm h_elm_in_chain
+        cases h_elm_in_chain with
+        | max h_max =>
+          simp [getMax]
+          let hdInDom := h_max.left
+          exact R.refl
+        | head b h_b_P_hd tail =>
+          apply R.trans b
+          apply tail.getMax_R_all
+          apply tail.head_in_dom
+          apply h_b_P_hd.left
+        | tail a b h tail =>
+          rw [getMax_cons]
+          apply getMax_R_all
+          assumption
+      
+      theorem getMax_R_head
+        [R.PreOrder]
+        {hd : α}
+        (chain : R.PChainD hd)
+      : R chain.getMax hd :=
+        chain.getMax_R_all hd chain.head_in_dom
+    end Rel.PChainD
+  end
+
+
+
   theorem Rel.lemma_1_e_mpr
     (R : Rel α)
     [R.PreOrder]
@@ -282,28 +436,121 @@ section lemma_1_e
       (h_C_eq_M y).mpr h_Max_y
     ⟨h_C_x.right y, h_C_y.right x⟩
 
-  theorem Rel.lemma_1_e_mp
-    (R : Rel α)
-    [R.PreOrder]
-    [Set.Finite R.Dom]
-    [Set.NEmpty R.Dom]
-  : (∀ (x y : α), [R.InDom x] → [R.InDom y] → R.M x → R.M y → R.I x y)
-  → ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a := by
-    intro get_I_of_M max maxInDom
-    apply Iff.intro $ R.max_of_best max
-    intro h_M_max
-    simp
-    simp [Membership.mem]
-    apply And.intro maxInDom
-    intro a' _
-    let h := h_M_max.right a'
-    simp only [Rel.P, Decidable.not_and_iff_or_not] at h
-    cases h
-    case inl h_not_a'_R_a =>
-      apply Decidable.byContradiction
-      sorry
-    case inr h_a_R_a' =>
-      apply Decidable.byContradiction
-      intro h
-      exact h_a_R_a' h
+
+  -- /-- This is true on finite domains but writing the proof is hard for me. -/
+  -- theorem Rel.tmp
+  --   (R : Rel α)
+  --   [R.PreOrder]
+  --   [Set.Finite R.Dom]
+  --   [Set.NEmpty R.Dom]
+  -- : ∀ (a : α), [R.InDom a] → a ∈ R.M ∨ (∃ (max : α), R.InDom max ∧ max ∈ R.M ∧ R max a) := by
+  --   intro a aInDom
+  --   if h : a ∈ R.M then
+  --     exact Or.inl h
+  --   else
+  --     apply Or.inr
+  --     let ⟨cex, cexInDom, h_cex⟩ :=
+  --       Rel.not_max_iff_cex.mp h
+  --     if h : cex ∈ R.M then
+  --       exact ⟨cex, cexInDom, h, h_cex.left⟩
+  --     else
+        
+  --       let ih :=
+  --         R.tmp cex
+  --       simp [h] at ih
+  --       let ⟨max, maxInDom, h_M_max, h_max⟩ := ih 
+  --       exists max
+  --       apply And.intro maxInDom
+  --       apply And.intro h_M_max
+  --       apply R.trans h_max h_cex.left
+
+  -- theorem Rel.lemma_1_e_mp
+  --   (R : Rel α)
+  --   [R.PreOrder]
+  --   [Set.Finite R.Dom]
+  --   [Set.NEmpty R.Dom]
+  -- : (∀ (x y : α), [R.InDom x] → [R.InDom y] → R.M x → R.M y → R.I x y)
+  -- → ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a := by
+  --   intro get_I_of_M max maxInDom
+  --   apply Iff.intro $ R.max_of_best max
+  --   intro h_M_max
+
+  --   simp [Membership.mem, C]
+  --   apply And.intro maxInDom
+  --   intro a' a'InDom
+  --   let h := h_M_max.right a'
+  --   simp only [P, Decidable.not_and, Decidable.not_not] at h
+  --   cases h <;> try assumption
+  --   case inl h =>
+
+  --     sorry
+
+    -- apply Decidable.byContradiction
+    -- intro h_not_max_R_a'
+    -- let h_not_a'_R_max := h_M_max.right a'
+    -- simp only [P, Decidable.not_and, Decidable.not_not] at h_not_a'_R_max
+    -- cases h_not_a'_R_max with
+    -- | inl h_not_a'_R_max =>
+      
+    --   sorry
+    -- | inr h_max_R_a' =>
+    --   sorry
+
+    -- apply Decidable.byContradiction
+    -- intro h_not_C_max
+    -- let ⟨bCex, bCexInDom, h_bCex⟩ :=
+    --   Rel.not_best_iff_cex.mp h_not_C_max
+    -- let h_bCex' :=
+    --   h_M_max.right bCex
+    -- simp only [P, Decidable.not_and] at h_bCex'
+    -- cases h_bCex' with
+    -- | inr h_bCex' =>
+    --   exact h_bCex' h_bCex
+    -- | inl h_bCex' =>
+    --   if h : bCex ∈ R.M then
+    --     let h_max_R_bCex :=
+    --       get_I_of_M max bCex h_M_max h
+    --       |>.left
+    --     exact h_bCex h_max_R_bCex
+    --   else if h' : bCex ∈ R.C then
+    --     apply R.max_of_best bCex h' |> h
+    --   else
+    --     let ⟨mCex, mCexInDom, h_mCex⟩ :=
+    --       Rel.not_max_iff_cex.mp h
+    --     let ⟨bCex', bCexInDom', h_bCex'⟩ :=
+    --       Rel.not_best_iff_cex.mp h'
+    --     simp only [P] at h_mCex
+    --     let h_not_mCex_P_max := h_M_max.right mCex
+    --     simp only [P, Decidable.not_and] at h_not_mCex_P_max
+    --     cases h_not_mCex_P_max with
+    --     | inl h =>
+          
+    --       sorry
+    --     | inr h =>
+    --       simp [Decidable.not_not] at h
+    --       exact R.trans h h_mCex.left |> h_bCex
+
+    -- rw [not_exists] at h_C_empty
+    -- let h :=
+    --   (h_C_empty max |> not_and.mp)
+    --     maxInDom
+    -- simp at h
+    -- let h := h maxInDom
+    -- simp [Decidable.not_forall] at h
+    -- sorry
+
+    -- simp
+    -- simp [Membership.mem]
+    -- apply And.intro maxInDom
+    -- intro a' _
+    -- let h := h_M_max.right a'
+    -- simp only [Rel.P, Decidable.not_and_iff_or_not] at h
+    -- cases h
+    -- case inl h_not_a'_R_a =>
+    --   apply Decidable.byContradiction
+    --   sorry
+    -- case inr h_a_R_a' =>
+    --   apply Decidable.byContradiction
+    --   intro h
+    --   exact h_a_R_a' h
 end lemma_1_e

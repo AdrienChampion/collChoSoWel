@@ -108,7 +108,7 @@ section max
 
 
 
-  def Rel.not_isMax_cex_mp
+  def Rel.not_isMaxOf_cex_mp
     (R : Rel α)
     [Set.Finite R.Dom]
     (a : α) [R.InDom a]
@@ -131,7 +131,7 @@ section max
         exists cex
         exact And.intro (List.Mem.tail hd h_cex_dom) h_P
 
-  theorem Rel.not_isMax_cex_mpr
+  theorem Rel.not_isMaxOf_cex_mpr
     (R : Rel α)
     [Set.Finite R.Dom]
     (a : α) [R.InDom a]
@@ -159,13 +159,13 @@ section max
           simp at h
           exact h
 
-  theorem Rel.not_isMax_iff_cex
+  theorem Rel.not_isMaxOf_iff_cex
     {R : Rel α}
     [Set.Finite R.Dom]
     {a : α} [R.InDom a]
     {list : List α}
   : ¬ R.isMaxOf a list ↔ (∃ (a' : α), a' ∈ list ∧ R.P a' a) :=
-    ⟨R.not_isMax_cex_mp a list, R.not_isMax_cex_mpr a list⟩
+    ⟨R.not_isMaxOf_cex_mp a list, R.not_isMaxOf_cex_mpr a list⟩
 
 
 
@@ -209,10 +209,10 @@ section max
       exact h_max a' (List.Mem.tail _ a'_dom)
 
   theorem Rel.isMaxOf_iff_max
-    (R : Rel α)
+    {R : Rel α}
     [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
+    {a : α} [R.InDom a]
+    {list : List α}
   : R.isMaxOf a list ↔ (∀ (a' : α), a' ∈ list → ¬ R.P a' a) :=
     ⟨R.isMaxOf_max_mp a list, R.isMaxOf_max_mpr a list⟩
 
@@ -231,17 +231,45 @@ section max
   : R.isMax a ↔ a ∈ R.M := by
     constructor
     · intro h_isMax
-      let h := (R.isMaxOf_iff_max a R.listDom).mp h_isMax
+      let h := Rel.isMaxOf_iff_max.mp h_isMax
       simp only [Membership.mem, Set.mem, M, max]
       apply And.intro aInDom
       intro a' a'InDom
       apply h a' $ R.listDomIso.mpr a'InDom
     · intro h_M_a
       simp [Membership.mem, Set.mem, M, max] at h_M_a
-      apply (R.isMaxOf_iff_max a R.listDom).mpr
+      apply Rel.isMaxOf_iff_max.mpr
       intro a' h_a'_dom
       let a'InDom := R.listDomIso.mp h_a'_dom
       exact h_M_a.right a'
+
+  theorem Rel.not_isMax_iff_cex
+    {R : Rel α}
+    [Set.Finite R.Dom]
+    {a : α} [aInDom : R.InDom a]
+  : ¬ R.isMax a ↔ (∃ (a' : α), R.InDom a' ∧ R.P a' a) := by
+    simp only [isMax]
+    constructor
+    · intro h_not_max
+      let cex :=
+        Rel.not_isMaxOf_iff_cex.mp h_not_max
+      let ⟨cex, h_cex_dom, h_cex⟩ := cex
+      exists cex
+      apply And.intro (R.listDomIso.mp h_cex_dom) h_cex
+    · intro cex
+      let ⟨cex, h_cex_dom, h_cex⟩ := cex
+      apply Rel.not_isMaxOf_iff_cex.mpr
+      exists cex
+      apply And.intro (R.listDomIso.mpr h_cex_dom)
+      apply h_cex
+
+  theorem Rel.not_max_iff_cex
+    {R : Rel α}
+    [Set.Finite R.Dom]
+    {a : α} [aInDom : R.InDom a]
+  : ¬ a ∈ R.M ↔ (∃ (a' : α), R.InDom a' ∧ R.P a' a) := by
+    simp only [← Rel.isMax_iff_max, Rel.not_isMax_iff_cex]
+
 
   instance
     (R : Rel α)
@@ -285,7 +313,7 @@ section best
 
 
 
-  theorem Rel.not_isBest_cex_mp
+  theorem Rel.not_isBestOf_cex_mp
     (R : Rel α)
     [Set.Finite R.Dom]
     (a : α) [R.InDom a]
@@ -308,7 +336,7 @@ section best
         exists cex
         exact And.intro (List.Mem.tail hd h_cex_dom) h_R
 
-  theorem Rel.not_isBest_cex_mpr
+  theorem Rel.not_isBestOf_cex_mpr
     (R : Rel α)
     [Set.Finite R.Dom]
     (a : α) [R.InDom a]
@@ -336,13 +364,13 @@ section best
         else
           simp [h_a_head]
 
-  theorem Rel.not_isBest_iff_cex
+  theorem Rel.not_isBestOf_iff_cex
     {R : Rel α}
     [Set.Finite R.Dom]
     {a : α} [R.InDom a]
     {list : List α}
   : ¬ R.isBestOf a list ↔ (∃ (a' : α), a' ∈ list ∧ ¬ R a a') :=
-    ⟨R.not_isBest_cex_mp a list, R.not_isBest_cex_mpr a list⟩
+    ⟨R.not_isBestOf_cex_mp a list, R.not_isBestOf_cex_mpr a list⟩
 
 
 
@@ -395,6 +423,8 @@ section best
   : R.isBestOf a list ↔ (∀ (a' : α), a' ∈ list → R a a') :=
     ⟨R.isBestOf_best_mp a list, R.isBestOf_best_mpr a list⟩
 
+
+
   /-- Decidable `Rel.best` on finite domains. -/
   def Rel.isBest
     (R : Rel α)
@@ -421,6 +451,33 @@ section best
       intro a' h_a'_dom
       let a'InDom := R.listDomIso.mp h_a'_dom
       exact h_C_a.right a'
+
+  theorem Rel.not_isBest_iff_cex
+    {R : Rel α}
+    [Set.Finite R.Dom]
+    {a : α} [aInDom : R.InDom a]
+  : ¬ R.isBest a ↔ (∃ (a' : α), R.InDom a' ∧ ¬ R a a') := by
+    simp only [isBest]
+    constructor
+    · intro h_not_best
+      let cex :=
+        Rel.not_isBestOf_iff_cex.mp h_not_best
+      let ⟨cex, h_cex_dom, h_cex⟩ := cex
+      exists cex
+      apply And.intro (R.listDomIso.mp h_cex_dom) h_cex
+    · intro cex
+      let ⟨cex, h_cex_dom, h_cex⟩ := cex
+      apply Rel.not_isBestOf_iff_cex.mpr
+      exists cex
+      apply And.intro (R.listDomIso.mpr h_cex_dom)
+      apply h_cex
+
+  theorem Rel.not_best_iff_cex
+    {R : Rel α}
+    [Set.Finite R.Dom]
+    {a : α} [aInDom : R.InDom a]
+  : ¬ a ∈ R.C ↔ (∃ (a' : α), R.InDom a' ∧ ¬ R a a') := by
+    simp only [← Rel.isBest_iff_best, Rel.not_isBest_iff_cex]
 
   instance
     (R : Rel α)
