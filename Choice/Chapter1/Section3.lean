@@ -334,6 +334,21 @@ section lemma_1_e
       {R : Rel α}
 
     namespace Rel.PChainD
+      def len : R.PChainD hd → Nat
+      | max _ => 1
+      | cons _ _ tail => 1 + tail.len
+
+      def zero_lt_len : (chain : R.PChainD hd) → 0 < chain.len
+      | max _ => Nat.zero_lt_succ _
+      | cons b h tail => by
+        simp [len, ←Nat.succ_eq_one_add]
+        apply Nat.zero_lt_succ
+      
+      def len_ne_zero (chain : R.PChainD hd) : chain.len ≠ 0 :=
+        Nat.not_eq_zero_of_lt chain.zero_lt_len
+
+
+
       theorem all_in_dom
         {hd : α}
         (chain : R.PChainD hd)
@@ -343,6 +358,13 @@ section lemma_1_e
       | Mem.head _b _h _tail => inferInstance
       | Mem.tail _hd _b _h tail elm_in_tail =>
         tail.all_in_dom elm elm_in_tail
+
+      theorem subset_listDom
+        [Set.Finite R.Dom]
+        (chain : R.PChainD hd)
+      : ∀ (a : α), a ∈ chain → a ∈ R.listDom := fun a a_in_chain =>
+        chain.all_in_dom a a_in_chain
+        |> R.listDomIso.mpr
 
       theorem head_in_dom
         {hd : α}
@@ -417,6 +439,61 @@ section lemma_1_e
         (chain : R.PChainD hd)
       : R chain.getMax hd :=
         chain.getMax_R_all hd chain.head_in_dom
+
+      theorem not_in_chain
+        [R.PreOrder]
+        {a b : α} [R.InDom a] [R.InDom b]
+        (h_b_P_a : R.P b a)
+        (chain : R.PChainD b)
+      : ¬ a ∈ chain := by
+        intro a_in_cons
+        cases a_in_cons with
+        | max _ =>
+          exact h_b_P_a.right h_b_P_a.left
+        | head _ _ _ =>
+          exact h_b_P_a.right h_b_P_a.left
+        | tail b c h_c_P_b tail =>
+          let h_c_P_a :=
+            R.P.trans b h_c_P_b h_b_P_a
+          apply not_in_chain h_c_P_a tail
+          assumption
+
+
+      
+      -- theorem len_tail
+      --   [R.PreOrder]
+      --   [Set.Finite R.Dom]
+      --   (a b : α) [R.InDom a] [R.InDom b]
+      --   (h_b_P_a : R.P b a)
+      --   (tail : R.PChainD b)
+      --   (chain : R.PChainD a)
+      -- : chain = cons b h_b_P_a tail → tail.len < R.listDom.length := by
+      --   intro h_chain_def
+      --   let h :=
+      --     tail.not_in_chain h_b_P_a
+      --   let a_in_listDom : a ∈ R.listDom :=
+      --     R.listDomIso.mpr inferInstance
+
+      --   sorry
+      
+      -- theorem iso_listDom_of_max_len_mpr
+      --   [Set.Finite R.Dom]
+      --   (chain : R.PChainD hd)
+      -- : chain.len = R.listDom.length → ∀ (a : α), a ∈ R.listDom → a ∈ chain := by
+      --   intro h_len a a_in_listDom
+      --   sorry
+
+
+
+      /-- How do I prove this? `/(-_-)\` -/
+      theorem len_le_listDom_len
+        [Set.Finite R.Dom]
+        (chain : R.PChainD hd)
+      : chain.len ≤ R.listDom.length := by
+        apply Decidable.byContradiction
+        intro h
+        simp [Nat.lt_of_not_le] at h
+        sorry
     end Rel.PChainD
   end
 
