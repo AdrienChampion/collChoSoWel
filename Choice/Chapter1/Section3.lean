@@ -485,15 +485,15 @@ section lemma_1_e
 
 
 
-      /-- How do I prove this? `/(-_-)\` -/
-      theorem len_le_listDom_len
-        [Set.Finite R.Dom]
-        (chain : R.PChainD hd)
-      : chain.len ≤ R.listDom.length := by
-        apply Decidable.byContradiction
-        intro h
-        simp [Nat.lt_of_not_le] at h
-        sorry
+      -- /-- How do I prove this? `/(-_-)\` -/
+      -- theorem len_le_listDom_len
+      --   [Set.Finite R.Dom]
+      --   (chain : R.PChainD hd)
+      -- : chain.len ≤ R.listDom.length := by
+      --   apply Decidable.byContradiction
+      --   intro h
+      --   simp [Nat.lt_of_not_le] at h
+      --   sorry
     end Rel.PChainD
   end
 
