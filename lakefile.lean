@@ -5,8 +5,8 @@ package choice {
   -- add package configuration options here
 }
 
-require std from git
-  "https://github.com/leanprover/std4.git"
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git"
 
 lean_lib Choice {
   -- add library configuration options here

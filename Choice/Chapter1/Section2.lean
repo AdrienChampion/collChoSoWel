@@ -7,502 +7,170 @@ namespace Choice
 
 
 
-variable
-  (R : Rel α)
+section
+  variable
+    {α : Type u}
+    [R : Preorder α]
+  
+  /-- Custom (computable) notion of finiteness.
+  
+  Implies `_root_.Finite`. -/
+  class Finite (α : Type u) where
+    elems : List α
+    toℕ : α → Fin elems.length
+    sanity_α : ∀ (a : α), elems.get (toℕ a) = a
+    sanity_fin : ∀ (idx : Fin elems.length), toℕ (elems.get idx) = idx
 
-/-- **Strict** `P`reference, decidable.
+  abbrev Finite.card (α : Type u) [F : Finite α] : ℕ := 
+    F.elems.length
+  
+  abbrev Finite.Idx (α : Type u) [F : Finite α] :=
+    Fin F.card
 
-- not reflexive
-- transitive if `R.Trans`
--/
-def Rel.P : Rel α where
-  Dom := R.Dom
-  R a a' := R a a' ∧ ¬ R a' a
-  decidable := inferInstance
+  abbrev Finite.invℕ [F : Finite α] : F.Idx → α :=
+    F.elems.get
+  
+  abbrev Finite.all_in_elems [F : Finite α] : ∀ (a : α), a ∈ F.elems := by
+    intro a
+    let h_get_a := F.sanity_α a
+    rw [←h_get_a]
+    apply List.get_mem
 
-def Rel.P_irrefl : ¬ R.P a a := by
-  simp [P]
 
-theorem Rel.P_Dom : R.Dom = R.P.Dom :=
-  rfl
-instance [I : R.P.InDom a] : R.InDom a where
-  inDom := I.inDom
-instance [I : R.InDom a] : R.P.InDom a where
-  inDom := I.inDom
 
-instance [instTrans : R.Trans] : R.P.Trans where
-  trans
-    {a a' a'' : α} [R.P.InDom a] [R.P.InDom a'] [R.P.InDom a'']
-    (h₁ : R.P a a')
-    (h₂ : R.P a' a'')
-  := ⟨
-    instTrans.trans h₁.left h₂.left,
-    fun h_a''a =>
-      let h_a'a := instTrans.trans h₂.left h_a''a
-      h₁.right h_a'a
+  def Finite.bijℕ [I : Finite α] : α ≃ Fin I.card where
+    toFun := I.toℕ
+    invFun := I.invℕ
+    left_inv := I.sanity_α
+    right_inv := I.sanity_fin
+  
+  instance [I : Finite α] : _root_.Finite α :=
+    .intro I.bijℕ
+
+  def wellFoundedP
+    [Preorder α]
+    [Finite α]
+  : WellFoundedLT α :=
+    Finite.to_wellFoundedLT
+
+
+
+  def Finite.zero_lt_card
+    [F : Finite α]
+    [I : Inhabited α]
+  : 0 < F.card := by
+    let idx := F.toℕ default
+    cases h : F.elems.length with
+    | zero =>
+      rw [h] at idx
+      let ⟨n, h⟩ := idx
+      contradiction
+    | succ n =>
+      simp [card]
+      simp [h]
+
+  def Finite.all_iff_elems
+    [F : Finite α]
+    {P : α → Prop}
+  : (∀ a, P a) ↔ (∀ a ∈ F.elems, P a) := ⟨
+    fun h a _ =>
+      h a,
+    fun h a =>
+      let h := h a
+      h (F.all_in_elems a)
+  ⟩
+end
+
+
+
+section
+  variable
+    {α : Type u}
+    [R : Preorder α]
+    [F : Finite α]
+    [I : Inhabited α]
+
+
+
+  abbrev Preorder.is_max (a : α) : Prop :=
+    ¬ ∃ (b : α), b < a
+  abbrev Preorder.M : Set α :=
+    is_max
+
+  def Preorder.isMax (a : α) : Bool :=
+    F.elems.all (¬ · < a)
+  
+  theorem Preorder.isMax_iff_in_M : R.isMax a ↔ a ∈ R.M := ⟨
+    by
+      simp [Membership.mem, Set.Mem, isMax]
+      intro isMax_a b
+      exact isMax_a b (F.all_in_elems b),
+    by
+      simp [Membership.mem, Set.Mem, isMax]
+      intro h b _
+      exact h b
   ⟩
 
-
-
-/-- `I`ndifference, decidable.
-
-- reflexive if `R.Refl`
-- transitive if `R.Trans`
--/
-def Rel.I : Rel α where
-  Dom := R.Dom
-  R a a' := R a a' ∧ R a' a
-  decidable := inferInstance
-
-theorem Rel.I_Dom : R.Dom = R.I.Dom :=
-  rfl
-instance [I : R.I.InDom a] : R.InDom a where
-  inDom := I.inDom
-instance [I : R.InDom a] : R.I.InDom a where
-  inDom := I.inDom
-
-instance [instRefl : R.Refl] : R.I.Refl where
-  refl {a : α} [R.I.InDom a] := ⟨
-    instRefl.refl,
-    instRefl.refl
-  ⟩
-
-instance [instTrans : R.Trans] : R.I.Trans where
-  trans
-    {a a' a'' : α} [R.I.InDom a] [R.I.InDom a'] [R.I.InDom a'']
-    (h₁ : R.I a a')
-    (h₂ : R.I a' a'')
-  := ⟨
-    instTrans.trans h₁.left h₂.left,
-    instTrans.trans h₂.right h₁.right
-  ⟩
-
-
-
-variable
-  (a a' : α) [R.InDom a] [R.InDom a']
-
-
-
-section max
-  /-- Nothing is more prefered. -/
-  @[simp]
-  abbrev Rel.max
-    (a : α)
-  : Prop :=
-    InDom R a ∧ (∀ (a' : α) [R.InDom a'], ¬ R.P a' a)
-
-  /-- `M`aximal set, see `Rel.max`. -/
-  abbrev Rel.M : Set α :=
-    R.max
-
-  /-- Decidable `Rel.max` on a list. -/
-  def Rel.isMaxOf
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-  : List α → Bool
-  | [] => true
-  | hd::tl =>
-    if R.P hd a then false else R.isMaxOf a tl
-
-
-
-  def Rel.not_isMaxOf_cex_mp
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : ¬ R.isMaxOf a list → ∃ (a' : α), a' ∈ list ∧ R.P a' a := by
-    intro h_isMaxOf
-    induction list with
-    | nil =>
-      contradiction
-    | cons hd tail ih =>
-      simp [isMaxOf] at h_isMaxOf
-      cases Decidable.em (R.P hd a) with
-      | inl h =>
-        simp [h] at h_isMaxOf
-        exists hd
-        simp [h]
-      | inr h =>
-        simp [h] at h_isMaxOf
-        let ⟨cex, ⟨h_cex_dom, h_P⟩⟩ := ih (by simp [h_isMaxOf])
-        exists cex
-        exact And.intro (List.Mem.tail hd h_cex_dom) h_P
-
-  theorem Rel.not_isMaxOf_cex_mpr
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : (∃ (a' : α), a' ∈ list ∧ R.P a' a) → ¬ R.isMaxOf a list := by
-    intro h_ex
-    induction list with
-    | nil =>
-      let ⟨_, absurd, _⟩ := h_ex
-      contradiction
-    | cons head tail ih =>
-      simp
-      let ⟨a', h_a'_dom, h_not_a'_P_a⟩ := h_ex
-      cases h_a'_dom with
-      | head =>
-        simp [isMaxOf, h_not_a'_P_a]
-      | tail _ h_a'_dom =>
-        let h :=
-          ih ⟨a', h_a'_dom, h_not_a'_P_a⟩
-        simp [isMaxOf]
-        if h_a_head : R.P head a then
-          simp [h_a_head]
-        else
-          simp [h_a_head]
-          simp at h
-          exact h
-
-  theorem Rel.not_isMaxOf_iff_cex
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [R.InDom a]
-    {list : List α}
-  : ¬ R.isMaxOf a list ↔ (∃ (a' : α), a' ∈ list ∧ R.P a' a) :=
-    ⟨R.not_isMaxOf_cex_mp a list, R.not_isMaxOf_cex_mpr a list⟩
-
-
-
-  theorem Rel.isMaxOf_max_mp
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : R.isMaxOf a list → ∀ (a' : α), a' ∈ list → ¬ R.P a' a := by
-    intro h_isMaxOf a' a'_dom
-    induction list with
-    | nil =>
-      contradiction
-    | cons hd tl ih =>
-      simp only [isMaxOf] at h_isMaxOf
-      if h : R.P hd a
-      then simp [h] at h_isMaxOf
-      else
-        simp only [] at h
-        simp [h] at h_isMaxOf
-        cases a'_dom
-        · exact h
-        case tail h_a'_dom =>
-          exact ih h_isMaxOf h_a'_dom
-
-  theorem Rel.isMaxOf_max_mpr
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : (∀ (a' : α), a' ∈ list → ¬ R.P a' a) → R.isMaxOf a list := by
-    intro h_max
-    cases list with
-    | nil =>
-      simp [isMaxOf]
-    | cons head tail =>
-      simp only [isMaxOf]
-      simp [h_max head (List.mem_cons_self _ _)]
-      apply R.isMaxOf_max_mpr a tail
-      intro a' a'_dom
-      exact h_max a' (List.Mem.tail _ a'_dom)
-
-  theorem Rel.isMaxOf_iff_max
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [R.InDom a]
-    {list : List α}
-  : R.isMaxOf a list ↔ (∀ (a' : α), a' ∈ list → ¬ R.P a' a) :=
-    ⟨R.isMaxOf_max_mp a list, R.isMaxOf_max_mpr a list⟩
-
-  /-- Decidable `Rel.max` on finite domains. -/
-  def Rel.isMax
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-  : Bool :=
-    R.isMaxOf a R.listDom
-
-  theorem Rel.isMax_iff_max
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [aInDom : R.InDom a]
-  : R.isMax a ↔ a ∈ R.M := by
-    constructor
-    · intro h_isMax
-      let h := Rel.isMaxOf_iff_max.mp h_isMax
-      simp only [Membership.mem, Set.mem, M, max]
-      apply And.intro aInDom
-      intro a' a'InDom
-      apply h a' $ R.listDomIso.mpr a'InDom
-    · intro h_M_a
-      simp [Membership.mem, Set.mem, M, max] at h_M_a
-      apply Rel.isMaxOf_iff_max.mpr
-      intro a' h_a'_dom
-      let a'InDom := R.listDomIso.mp h_a'_dom
-      exact h_M_a.right a'
-
-  theorem Rel.not_isMax_iff_cex
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [aInDom : R.InDom a]
-  : ¬ R.isMax a ↔ (∃ (a' : α), R.InDom a' ∧ R.P a' a) := by
-    simp only [isMax]
-    constructor
-    · intro h_not_max
-      let cex :=
-        Rel.not_isMaxOf_iff_cex.mp h_not_max
-      let ⟨cex, h_cex_dom, h_cex⟩ := cex
-      exists cex
-      apply And.intro (R.listDomIso.mp h_cex_dom) h_cex
-    · intro cex
-      let ⟨cex, h_cex_dom, h_cex⟩ := cex
-      apply Rel.not_isMaxOf_iff_cex.mpr
-      exists cex
-      apply And.intro (R.listDomIso.mpr h_cex_dom)
-      apply h_cex
-
-  theorem Rel.not_max_iff_cex
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [aInDom : R.InDom a]
-  : ¬ a ∈ R.M ↔ (∃ (a' : α), R.InDom a' ∧ R.P a' a) := by
-    simp only [← Rel.isMax_iff_max, Rel.not_isMax_iff_cex]
-
-
-  instance
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-  : Decidable (a ∈ R.M) :=
-    if h : R.isMax a
-    then
-      Rel.isMax_iff_max.mp h
+  instance : Decidable (a ∈ R.M) :=
+    if h : R.isMax a then
+      Preorder.isMax_iff_in_M.mp h
       |> isTrue
     else
-      Rel.isMax_iff_max
-      |> not_congr
-      |>.mp h
+      Preorder.isMax_iff_in_M.not.mp h
       |> isFalse
-end max
+
+  def Preorder.maxCex : a ∉ M → ∃ (b : α), b < a := by
+    simp [Membership.mem, Set.Mem, M, is_max]
+    intro b h
+    exact ⟨b, h⟩
+  
+  def Preorder.maxCexInv : (∃ (b : α), b < a) → a ∉ M := by
+    simp [Membership.mem, Set.Mem, M, is_max]
+    intro b h
+    exact ⟨b, h⟩
+  
+  def Preorder.not_getMax_iff_cex : a ∉ M ↔ ∃ (b : α), b < a :=
+    ⟨maxCex, maxCexInv⟩ 
 
 
 
-section best
-  /-- Prefered to all. -/
-  @[simp]
-  abbrev Rel.best
-    (a : α)
-  : Prop :=
-    InDom R a ∧ (∀ (a' : α) [InDom R a'], R a a')
+  abbrev Preorder.is_best (a : α) : Prop :=
+    ∀ (b : α), a ≤ b
+  abbrev Preorder.C : Set α :=
+    is_best
 
-  /-- `C`hoice set, see `Rel.best`. -/
-  abbrev Rel.C : Set α :=
-    R.best
+  def Preorder.isBest (a : α) : Bool :=
+    F.elems.all (a ≤ ·)
+  
+  theorem Preorder.isBest_iff_in_C : isBest a ↔ a ∈ R.C := ⟨
+    by
+      simp [isBest]
+      intro isBest_a b
+      exact isBest_a b (F.all_in_elems b),
+    by
+      simp [isBest]
+      intro h b _
+      exact h b
+  ⟩
 
-  /-- Decidable `Rel.best` on a list. -/
-  def Rel.isBestOf
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-  : List α → Bool
-  | [] => true
-  | hd::tl =>
-    if R a hd then R.isBestOf a tl else false
-
-
-
-  theorem Rel.not_isBestOf_cex_mp
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : ¬ R.isBestOf a list → ∃ (a' : α), a' ∈ list ∧ ¬ R a a' := by
-    intro h_isBestOf
-    induction list with
-    | nil =>
-      contradiction
-    | cons hd tail ih =>
-      simp [isBestOf] at h_isBestOf
-      cases Decidable.em (R a hd) with
-      | inr h =>
-        simp [h] at h_isBestOf
-        exists hd
-        simp [h]
-      | inl h =>
-        simp [h] at h_isBestOf
-        let ⟨cex, ⟨h_cex_dom, h_R⟩⟩ := ih (by simp [h_isBestOf])
-        exists cex
-        exact And.intro (List.Mem.tail hd h_cex_dom) h_R
-
-  theorem Rel.not_isBestOf_cex_mpr
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : (∃ (a' : α), a' ∈ list ∧ ¬ R a a') → ¬ R.isBestOf a list := by
-    intro h_ex
-    induction list with
-    | nil =>
-      let ⟨_, absurd, _⟩ := h_ex
-      contradiction
-    | cons head tail ih =>
-      simp
-      let ⟨a', h_a'_dom, h_not_a_R_a'⟩ := h_ex
-      cases h_a'_dom with
-      | head =>
-        simp [isBestOf, h_not_a_R_a']
-      | tail _ h_a'_dom =>
-        let h :=
-          ih ⟨a', h_a'_dom, h_not_a_R_a'⟩
-        simp [isBestOf]
-        if h_a_head : R a head then
-          simp [h_a_head]
-          simp at h
-          exact h
-        else
-          simp [h_a_head]
-
-  theorem Rel.not_isBestOf_iff_cex
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [R.InDom a]
-    {list : List α}
-  : ¬ R.isBestOf a list ↔ (∃ (a' : α), a' ∈ list ∧ ¬ R a a') :=
-    ⟨R.not_isBestOf_cex_mp a list, R.not_isBestOf_cex_mpr a list⟩
-
-
-
-  theorem Rel.isBestOf_best_mp
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : R.isBestOf a list → ∀ (a' : α), a' ∈ list → R a a' := by
-    induction list with
-    | nil =>
-      intro _ _ _
-      contradiction
-    | cons hd tl ih =>
-      intro h_isBestOf a' a'_dom
-      revert h_isBestOf
-      simp [isBestOf]
-      if h : R a hd
-      then
-        simp [h]
-        intro h_isBestOf
-        let h_sub_max := ih h_isBestOf
-        cases a'_dom ; exact h
-        case tail a'_dom =>
-          exact h_sub_max a' a'_dom
-      else simp [h]
-
-  theorem Rel.isBestOf_best_mpr
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : (∀ (a' : α), a' ∈ list → R a a') → R.isBestOf a list := by
-    intro h_best
-    cases list with
-    | nil =>
-      simp [isBestOf]
-    | cons head tail =>
-      simp only [isBestOf]
-      simp [h_best head (List.mem_cons_self _ _)]
-      apply R.isBestOf_best_mpr a tail
-      intro a' a'_dom
-      exact h_best a' (List.Mem.tail _ a'_dom)
-
-  theorem Rel.isBestOf_iff_best
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-    (list : List α)
-  : R.isBestOf a list ↔ (∀ (a' : α), a' ∈ list → R a a') :=
-    ⟨R.isBestOf_best_mp a list, R.isBestOf_best_mpr a list⟩
-
-
-
-  /-- Decidable `Rel.best` on finite domains. -/
-  def Rel.isBest
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-  : Bool :=
-    R.isBestOf a R.listDom
-
-  theorem Rel.isBest_iff_best
-    {R : Rel α}
-    [I : Set.Finite R.Dom]
-    {a : α} [aInDom : R.InDom a]
-  : R.isBest a ↔ a ∈ R.C := by
-    simp [Membership.mem]
-    constructor
-    · intro h_isBest
-      let h := (R.isBestOf_iff_best a R.listDom).mp h_isBest
-      simp [best]
-      apply And.intro aInDom
-      intro a' a'InDom
-      apply h a' $ I.iso.mpr a'InDom.inDom
-    · intro h_C_a
-      apply (R.isBestOf_iff_best a R.listDom).mpr
-      intro a' h_a'_dom
-      let a'InDom := R.listDomIso.mp h_a'_dom
-      exact h_C_a.right a'
-
-  theorem Rel.not_isBest_iff_cex
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [aInDom : R.InDom a]
-  : ¬ R.isBest a ↔ (∃ (a' : α), R.InDom a' ∧ ¬ R a a') := by
-    simp only [isBest]
-    constructor
-    · intro h_not_best
-      let cex :=
-        Rel.not_isBestOf_iff_cex.mp h_not_best
-      let ⟨cex, h_cex_dom, h_cex⟩ := cex
-      exists cex
-      apply And.intro (R.listDomIso.mp h_cex_dom) h_cex
-    · intro cex
-      let ⟨cex, h_cex_dom, h_cex⟩ := cex
-      apply Rel.not_isBestOf_iff_cex.mpr
-      exists cex
-      apply And.intro (R.listDomIso.mpr h_cex_dom)
-      apply h_cex
-
-  theorem Rel.not_best_iff_cex
-    {R : Rel α}
-    [Set.Finite R.Dom]
-    {a : α} [aInDom : R.InDom a]
-  : ¬ a ∈ R.C ↔ (∃ (a' : α), R.InDom a' ∧ ¬ R a a') := by
-    simp only [← Rel.isBest_iff_best, Rel.not_isBest_iff_cex]
-
-  instance
-    (R : Rel α)
-    [Set.Finite R.Dom]
-    (a : α) [R.InDom a]
-  : Decidable (a ∈ R.C) :=
-    if h : R.isBest a
-    then
-      Rel.isBest_iff_best.mp h
+  instance : Decidable (a ∈ R.C) :=
+    if h : R.isBest a then
+      Preorder.isBest_iff_in_C.mp h
       |> isTrue
     else
-      Rel.isBest_iff_best
-      |> not_congr
-      |>.mp h
+      Preorder.isBest_iff_in_C.not.mp h
       |> isFalse
-end best
 
-
-
-/-- Best implies max, but not the other way around. -/
-theorem Rel.max_of_best
-  (a : α)
-: a ∈ R.C → a ∈ R.M := by
-  simp [Membership.mem]
-  intro aInDom h_best
-  apply And.intro aInDom
-  intro a' _ h_a'_P_a
-  exact h_a'_P_a.right $ h_best a'
+  def Preorder.bestCex : a ∉ C → ∃ (b : α), ¬ a ≤ b := by
+    simp [Membership.mem, Set.Mem, C, is_best]
+    intro b h
+    exact ⟨b, h⟩
+  
+  def Preorder.bestCexInv : (∃ (b : α), ¬ a ≤ b) → a ∉ C := by
+    simp [Membership.mem, Set.Mem, C, is_best]
+    intro b h
+    exact ⟨b, h⟩
+  
+  def Preorder.not_getBest_iff_cex : a ∉ C ↔ ∃ (b : α), ¬ a ≤ b :=
+    ⟨bestCex, bestCexInv⟩ 
+end
