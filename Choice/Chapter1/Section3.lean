@@ -1,273 +1,151 @@
--- import Choice.Chapter1.Section2
+import Choice.Chapter1.Section2
 
 
 
--- /-! # Section 1.3 -/
--- namespace Choice
+/-! # Section 1.3 -/
+namespace Choice
 
 
 
--- /-! ### Lemma `1*a` -/
--- namespace lemma_1_a
---   variable
---     [R : Preorder α]
---     {x y z : α}
+/-! ### Lemma `1*a` -/
+namespace lemma_1_a
+  variable
+    [R : Preorder α]
+    {x y z : α}
 
---   theorem trans_I : x ≈ y → y ≈ z → x ≈ z :=
---     Trans.trans
+  theorem trans_I : x ≈ y → y ≈ z → x ≈ z :=
+    Trans.trans
 
---   theorem trans_PI : x < y → y ≈ z → x < z :=
---     fun xy yz => by
---       simp [R.lt_def, R.equiv_def] at *
---       apply And.intro (Trans.trans xy.left yz.left)
---       intro zx
---       exact xy.right (Trans.trans yz.left zx)
+  theorem trans_PI : x < y → y ≈ z → x < z :=
+    fun xy yz => by
+      simp [R.lt_def, R.equiv_def] at *
+      apply And.intro (Trans.trans xy.left yz.left)
+      intro zx
+      exact xy.right (Trans.trans yz.left zx)
 
---   theorem trans_IP : x ≈ y → y < z → x < z :=
---     fun xy yz => by
---       simp [R.lt_def, R.equiv_def] at *
---       apply And.intro (Trans.trans xy.left yz.left)
---       intro zx
---       exact yz.right (Trans.trans zx xy.left)
+  theorem trans_IP : x ≈ y → y < z → x < z :=
+    fun xy yz => by
+      simp [R.lt_def, R.equiv_def] at *
+      apply And.intro (Trans.trans xy.left yz.left)
+      intro zx
+      exact yz.right (Trans.trans zx xy.left)
   
---   theorem trans_P : x < y → y < z → x < z :=
---     Trans.trans
--- end lemma_1_a
+  theorem trans_P : x < y → y < z → x < z :=
+    Trans.trans
+end lemma_1_a
 
 
 
--- /-! ### Lemma `1*b` -/
--- section lemma_1_b
---   def Rel.listMaxP
---     (R : Rel α)
---     (l : List α)
---     (_h_nempty : l ≠ [])
---   : α :=
---     match l with
---     | [max] => max
---     | hd::hd'::tl =>
---       let max := R.listMaxP (hd'::tl) (List.cons_ne_nil _ _)
---       if R.P hd max then hd else max
-
---   theorem Rel.listMaxP_in_list
---     (R : Rel α)
---     (l : List α)
---     (h_nempty : l ≠ [])
---   : (R.listMaxP l h_nempty) ∈ l :=
---     match l with
---     | [max] => by
---       simp only [listMaxP, Membership.mem, List.Mem.head]
---     | hd::hd'::tl => by
---       let ih :=
---         R.listMaxP_in_list (hd'::tl) (List.cons_ne_nil _ _)
---       unfold listMaxP
---       simp [Membership.mem]
---       split
---       · exact List.Mem.head (hd'::tl)
---       · apply List.Mem.tail
---         exact ih
-
---   theorem Rel.listMaxP_max
---     (R : Rel α)
---     [R.PreOrder]
---     (l : List α)
---     (h_nempty : l ≠ [])
---     (a : α)
---     (h_a_dom : a ∈ l)
---     (allInDom : (a : α) → a ∈ l → R.InDom a)
---   : ¬ R.P a (R.listMaxP l h_nempty) :=
---     let h_a_in_dom :=
---       allInDom a h_a_dom
---     match l with
---     | [max] => by
---       let h_a_eq : a = max := by
---         cases h_a_dom ; rfl ; contradiction
---       simp [h_a_eq, listMaxP, R.P_irrefl]
---     | hd::hd'::tl => by
---       let hd_in_dom :=
---         allInDom hd (List.Mem.head (hd'::tl))
---       unfold listMaxP ; simp only []
---       let sub_in_dom :=
---         let inList' := R.listMaxP_in_list (hd'::tl) (List.cons_ne_nil _ _)
---         allInDom _ (List.Mem.tail hd inList')
---       split <;> cases h_a_dom
---       · intro h
---         exact h.right h.left
---       case inl.tail h_hd_P_sub h_a_dom =>
---         let h_not_a_P_sub :=
---           R.listMaxP_max (hd'::tl) (List.cons_ne_nil _ _) a h_a_dom
---             (fun a h => allInDom a $ List.Mem.tail hd h)
---         intro h_a_P_hd
---         apply h_not_a_P_sub
---         apply R.P.trans hd h_a_P_hd h_hd_P_sub
---       · assumption
---       case inr.tail h_hd_P_sub h_a_dom =>
---         apply R.listMaxP_max (hd'::tl) (List.cons_ne_nil _ _) a h_a_dom
---           (fun a h => allInDom a $ List.Mem.tail hd h)
-
---   def Rel.getMax
---     (R : Rel α)
---     [R.PreOrder]
---     [R.Finite]
---     [R.NEmpty]
---   : α :=
---     R.listMaxP R.listDom R.nemptyListDom
+/-! ### Lemma `1*b` -/
+section lemma_1_b
+  /- Lemma 1.b.
   
---   instance Rel.getMax_InDom
---     (R : Rel α)
---     [R.PreOrder]
---     [R.Finite]
---     [R.NEmpty]
---   : R.InDom R.getMax :=
---     let h := R.listMaxP_in_list R.listDom R.nemptyListDom
---     Rel.InDom.ofInList h
-
---   /-- Closest equivalent to lemma 1.b.
-  
---   Original formulation omits the necessary assumption that `R.Dom ≠ ∅`. -/
---   theorem Rel.getMax_max
---     (R : Rel α)
---     [R.PreOrder]
---     [R.Finite]
---     [R.NEmpty]
---   : R.max R.getMax := by
---     simp only [Rel.M, Membership.mem, max]
---     apply And.intro R.getMax_InDom
---     intro a instInDom_a
---     apply R.listMaxP_max R.listDom R.nemptyListDom a instInDom_a.toInList
---       (fun _ h_a_dom => InDom.ofInList h_a_dom)
+  Original formulation omits the necessary assumption `Inhabited α`. -/
+  theorem lemma_1_b
+    [R : Preorder α]
+    [_F : Finite α]
+    [_I : Inhabited α]
+  : ∃ max, max ∈ R.M :=
+    ⟨R.getMax, R.getMax_in_M rfl⟩
+end lemma_1_b
 
 
 
---   /- Lemma 1.b.
-  
---   Original formulation omits the necessary assumption that `R.Dom ≠ ∅`. -/
---   theorem Rel.lemma_1_b
---     {R : Rel α}
---     [R.PreOrder]
---     [R.Finite]
---     [R.NEmpty]
---   : R.max R.getMax :=
---     R.getMax_max
--- end lemma_1_b
+section lemma_1_c
+  theorem lemma_1_c'
+    [R : Preorder α]
+    [_F : Finite α]
+    {a b : α}
+    (h_ne : a ≠ b)
+    (h_only : ∀ (x : α), x = a ∨ x = b)
+  : a < b ↔ (∀ c, c ∈ R.C ↔ c = a) := ⟨
+    by
+      intro a_lt_b c
+      constructor
+      · intro C_c
+        let h := h_only c
+        cases h with
+        | inl h =>
+          assumption
+        | inr h =>
+          rw [← h] at a_lt_b
+          let tmp := C_c a
+          simp [R.lt_def] at a_lt_b
+          let absurd := a_lt_b.right tmp
+          contradiction
+      · intro h
+        rw [h]
+        intro d
+        cases h_only d with
+        | inl h =>
+          rw [h]
+        | inr h =>
+          rw [h]
+          simp [R.lt_def] at a_lt_b
+          exact a_lt_b.left
+    ,
+    by
+      intro h
+      simp [R.lt_def]
+      apply And.intro
+      · exact h a |>.mpr rfl b
+      · intro b_le_a
+        let C_b : b ∈ R.C := by
+          intro c
+          cases h_only c with
+          | inl h =>
+            rw [h]
+            exact b_le_a
+          | inr h =>
+            rw [h]
+        apply h_ne
+        apply Eq.symm
+        apply h b |>.mp C_b
+  ⟩
+
+  /-- Lemma 1.c.
+
+  Assumption `h_ne` is not in the book, but it is necessary for the theorem's `Iff.mpr`, since `R.P`
+  is not reflexive. The book version uses `[x, y]` for the set composed of `x` and `y`, which maybe
+  indicates that `x` and `y` should be different 🤷‍♀️. -/
+  theorem lemma_1_c
+    [R : Preorder α]
+    [_F : Finite α]
+    {a b : α}
+    (h_ne : a ≠ b)
+    (h_only : ∀ (x : α), x = a ∨ x = b)
+  : a < b ↔ R.C = {a} := by
+    constructor
+    · intro h
+      apply Set.ext
+      simp [Set.mem_singleton_of_eq]
+      apply (lemma_1_c' h_ne h_only).mp h
+    · intro h
+      apply (lemma_1_c' h_ne h_only).mpr
+      simp [h]
+end lemma_1_c
 
 
 
--- section lemma_1_c
---   theorem Rel.lemma_1_c_mp₁
---     (R : Rel α)
---     [R.Refl]
---     {a a' : α} [aInDom : R.InDom a] [R.InDom a']
---     (h_Dom : (x : α) → [R.InDom x] → x = a ∨ x = a')
---   : R.P a a' → R.C a := by
---     intro h_a_P_a'
---     apply And.intro aInDom
---     intro x xInDom
---     cases h_Dom x with
---     | inl h_eq =>
---       rw [h_eq]
---       exact R.refl
---     | inr h_eq =>
---       rw [h_eq]
---       exact h_a_P_a'.left
-
---   theorem Rel.lemma_1_c_mp₂
---     (R : Rel α)
---     {a a' : α} [R.InDom a] [R.InDom a']
---     (h_Dom : (x : α) → [R.InDom x] → x = a ∨ x = a')
---   : R.P a a' → ((x : α) → [R.InDom x] → R.C x → x = a) := by
---     intro h_a_P_a' x xInDom h_x_max
---     cases h_Dom x
---     case inl _ =>
---       assumption
---     case inr h_eq =>
---       let h_not_a_R_a' := h_a_P_a'.right
---       let h_a_R_a' := h_eq ▸ h_x_max.right a
---       contradiction
-
---   theorem Rel.lemma_1_c_mpr
---     (R : Rel α)
---     [R.Refl]
---     [R.Finite]
---     {a a' : α} [R.InDom a] [a'InDom : R.InDom a']
---     (h_ne : a ≠ a')
---     (h_Dom : (x : α) → [R.InDom x] → x = a ∨ x = a')
---     (h₁ : R.C a)
---     (h₂ : (x : α) → [R.InDom x] → R.C x → x = a)
---   : R.P a a' := by
---     simp
---     apply And.intro $ h₁.right a'
---     intro h_a'_R_a
---     let h : R.C a' := by
---       apply And.intro a'InDom
---       intro x xInDom
---       cases h_Dom x
---       case inl h_eq => rw [h_eq] ; exact h_a'_R_a
---       case inr h_eq => rw [h_eq] ; exact R.refl
---     rw [h₂ a' h] at h_ne
---     contradiction
-
---   /-- Lemma 1.c.
-
---   Assumption `h_ne` is not in the book, but it is necessary for the theorem's `Iff.mpr`, since `R.P`
---   is not reflexive. The book version uses `[x, y]` for the set composed of `x` and `y`, which maybe
---   indicates that `x` and `y` should be different. -/
---   theorem Rel.lemma_1_c
---     (R : Rel α)
---     [R.Refl]
---     [R.Finite]
---     {a a' : α} [R.InDom a] [R.InDom a']
---     (h_ne : a ≠ a')
---     (h_Dom : (x : α) → [R.InDom x] → x = a ∨ x = a')
---   : R.P a a' ↔ ( R.C a ∧ ((x : α) → [R.InDom x] → R.C x → x = a)) := by
---     constructor
---     · intro h_a_P_a'
---       constructor
---       · apply R.lemma_1_c_mp₁ h_Dom h_a_P_a'
---       · apply R.lemma_1_c_mp₂ h_Dom h_a_P_a'
---     · intro conj
---       let ⟨h_C_a, h⟩ := conj
---       apply R.lemma_1_c_mpr h_ne h_Dom h_C_a h
--- end lemma_1_c
-
-
-
--- section lemma_1_d
---   /-- Lemma 1.d. -/
---   theorem Rel.lemma_1_d
---     (R : Rel α)
---     [R.PreOrder]
---     (best : α)
---     [R.InDom best]
---     (h_best : best ∈ R.C)
---   : ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a := by
---     intro aMax aMaxInDom
---     constructor
---     · exact R.max_of_best aMax -- `aMax` is actually a *best* here, not a *max*
---     · simp only [M, C]
---       unfold Rel.max
---       unfold Rel.best
---       intro h_Max
---       let h_aMax_R_best : R aMax best := by
---         let h_best_R_aMax :=
---           h_best.right aMax
---         let h_not_best_P_aMax :=
---           h_Max.right best
---         simp [P] at h_not_best_P_aMax
---         exact h_not_best_P_aMax h_best_R_aMax
---       apply And.intro aMaxInDom
---       intro y yInDom
---       apply R.trans (a' := best) h_aMax_R_best $ h_best.right y
-
---   theorem Rel.lemma_1_d_C_empty
---     (R : Rel α)
---     [R.PreOrder]
---     (h_diff : ¬ ∀ (a : α), [R.InDom a] → R.C a ↔ R.M a)
---   : ¬ ∃ (best : α), R.InDom best ∧ R.C best :=
---     fun ⟨best, _bestInDom, h_C_best⟩ =>
---       R.lemma_1_d best h_C_best
---       |> h_diff
--- end lemma_1_d
+section lemma_1_d
+  /-- Lemma 1.d. -/
+  theorem Rel.lemma_1_d
+    [R : Preorder α]
+    {best : α}
+    (C_best : best ∈ R.C)
+  : R.C = R.M :=
+    Set.eq_of_subset_of_subset R.best_is_max (
+      by
+        intro max M_max a
+        let best_le_a := C_best a
+        let best_le_max := C_best max
+        simp [R.M_def] at M_max
+        let tmp := M_max best
+        simp [R.lt_def] at tmp
+        let max_le_best := tmp best_le_max
+        apply Trans.trans max_le_best best_le_a
+    )
+end lemma_1_d
 
 
 

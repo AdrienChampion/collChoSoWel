@@ -10,8 +10,8 @@ namespace Choice
 class ProtoOrder (α : Type u) extends LE α, LT α, HasEquiv α where
   decidableRel : DecidableRel le
   decidableEq : DecidableEq α
-  lt_def (a b : α) : a < b ↔ a ≤ b ∧ ¬ b ≤ a
-  equiv_def (a b : α) : a ≈ b ↔ a ≤ b ∧ b ≤ a
+  lt_def {a b : α} : a < b ↔ a ≤ b ∧ ¬ b ≤ a
+  equiv_def {a b : α} : a ≈ b ↔ a ≤ b ∧ b ≤ a
 
 instance [I : ProtoOrder α] : DecidableRel I.le :=
   I.decidableRel
@@ -75,7 +75,7 @@ section
     toLT := R.toLT
     le_refl := R.le_refl
     le_trans := R.le_trans
-    lt_iff_le_not_le := R.lt_def
+    lt_iff_le_not_le _ _ := R.lt_def
 
   class Order (α : Type u) extends Preorder α where
     le_total : Total le

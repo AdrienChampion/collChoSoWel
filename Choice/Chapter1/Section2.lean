@@ -55,19 +55,27 @@ section
 
 
 
+  def Finite.elems_not_nil
+    [F : Finite α]
+    [I : Inhabited α]
+  : F.elems ≠ [] := by
+    let h := F.all_in_elems default
+    intro h_nil
+    rw [h_nil] at h
+    apply List.mem_nil_iff default |>.mp h
+
   def Finite.zero_lt_card
     [F : Finite α]
     [I : Inhabited α]
   : 0 < F.card := by
-    let idx := F.toℕ default
-    cases h : F.elems.length with
-    | zero =>
-      rw [h] at idx
-      let ⟨n, h⟩ := idx
+    let not_nil := F.elems_not_nil
+    simp [card]
+    match h : F.elems with
+    | [] =>
+      rw [h] at not_nil
       contradiction
-    | succ n =>
-      simp [card]
-      simp [h]
+    | _::_ =>
+      simp [List.length]
 
   def Finite.all_iff_elems
     [F : Finite α]
@@ -96,17 +104,20 @@ section
     ¬ ∃ (b : α), b < a
   abbrev Preorder.M : Set α :=
     is_max
+  
+  theorem Preorder.M_def : a ∈ R.M ↔ ¬ ∃ (b : α), b < a := by
+    simp [Membership.mem, Set.Mem]
 
   def Preorder.isMax (a : α) : Bool :=
     F.elems.all (¬ · < a)
   
   theorem Preorder.isMax_iff_in_M : R.isMax a ↔ a ∈ R.M := ⟨
     by
-      simp [Membership.mem, Set.Mem, isMax]
+      simp [M_def, isMax]
       intro isMax_a b
       exact isMax_a b (F.all_in_elems b),
     by
-      simp [Membership.mem, Set.Mem, isMax]
+      simp [M_def, isMax]
       intro h b _
       exact h b
   ⟩
@@ -119,18 +130,19 @@ section
       Preorder.isMax_iff_in_M.not.mp h
       |> isFalse
 
-  def Preorder.maxCex : a ∉ M → ∃ (b : α), b < a := by
-    simp [Membership.mem, Set.Mem, M, is_max]
+  theorem Preorder.maxCex : a ∉ M → ∃ (b : α), b < a := by
+    simp [M_def]
     intro b h
     exact ⟨b, h⟩
   
-  def Preorder.maxCexInv : (∃ (b : α), b < a) → a ∉ M := by
-    simp [Membership.mem, Set.Mem, M, is_max]
+  theorem Preorder.maxCexInv : (∃ (b : α), b < a) → a ∉ M := by
+    simp [M_def]
     intro b h
     exact ⟨b, h⟩
   
-  def Preorder.not_getMax_iff_cex : a ∉ M ↔ ∃ (b : α), b < a :=
-    ⟨maxCex, maxCexInv⟩ 
+  theorem Preorder.not_max_iff_cex : a ∉ M ↔ ∃ (b : α), b < a :=
+    ⟨maxCex, maxCexInv⟩
+
 
 
 
@@ -138,6 +150,9 @@ section
     ∀ (b : α), a ≤ b
   abbrev Preorder.C : Set α :=
     is_best
+  
+  theorem Preorder.C_def : a ∈ R.C ↔ ∀ (b : α), a ≤ b := by
+    simp [Membership.mem, Set.Mem]
 
   def Preorder.isBest (a : α) : Bool :=
     F.elems.all (a ≤ ·)
@@ -161,16 +176,84 @@ section
       Preorder.isBest_iff_in_C.not.mp h
       |> isFalse
 
-  def Preorder.bestCex : a ∉ C → ∃ (b : α), ¬ a ≤ b := by
-    simp [Membership.mem, Set.Mem, C, is_best]
+  theorem Preorder.bestCex : a ∉ C → ∃ (b : α), ¬ a ≤ b := by
+    simp [C_def, is_best]
     intro b h
     exact ⟨b, h⟩
   
-  def Preorder.bestCexInv : (∃ (b : α), ¬ a ≤ b) → a ∉ C := by
-    simp [Membership.mem, Set.Mem, C, is_best]
+  theorem Preorder.bestCexInv : (∃ (b : α), ¬ a ≤ b) → a ∉ C := by
+    simp [C_def]
     intro b h
     exact ⟨b, h⟩
   
-  def Preorder.not_getBest_iff_cex : a ∉ C ↔ ∃ (b : α), ¬ a ≤ b :=
-    ⟨bestCex, bestCexInv⟩ 
+  theorem Preorder.not_best_iff_cex : a ∉ C ↔ ∃ (b : α), ¬ a ≤ b :=
+    ⟨bestCex, bestCexInv⟩
+
+
+
+  theorem Preorder.best_is_max : R.C ⊆ R.M
+    | best, C_best, ⟨cex, b_lt_cex⟩ => by
+      rw [R.lt_def] at b_lt_cex
+      apply b_lt_cex.right (C_best cex)
+
+
+
+  def Preorder.getMax : α :=
+    aux F.elems F.elems_not_nil
+  where
+    aux (l : List α) (_ : l ≠ []) :=
+      match l with
+      | [a] => a
+      | a::b::tl =>
+        let sub := aux (b::tl) (by simp)
+        if a < sub then a else sub
+
+  def Preorder.getMax.aux_legit
+    {l : List α} {h_ne_nil : l ≠ []} {max : α}
+  : max = getMax.aux l h_ne_nil → ∀ b ∈ l, ¬ b < max :=
+    match h : l with
+    | [] => by contradiction
+    | [a] => by
+      simp [aux]
+      intro h
+      rw [h]
+      apply irrefl
+    | hd::hd'::tl => by
+      simp [aux]
+      let sub := aux (hd'::tl) (List.cons_ne_nil hd' tl)
+      let ih :=
+        aux_legit
+          (l := hd'::tl)
+          (h_ne_nil := List.cons_ne_nil hd' tl)
+          (max := sub)
+          rfl
+      if hd_lt_sub : hd < sub then
+        simp [hd_lt_sub]
+        intro h ; rw [h]
+        simp
+        apply And.intro
+        · intro absurd
+          apply ih hd' (List.mem_cons_self hd' tl)
+          apply Trans.trans absurd hd_lt_sub
+        · intro a a_in_tl
+          intro a_lt_hd
+          apply ih a (List.Mem.tail hd' a_in_tl)
+          apply Trans.trans a_lt_hd hd_lt_sub
+      else
+        simp [hd_lt_sub]
+        intro max_def
+        simp [max_def]
+        apply And.intro hd_lt_sub
+        apply And.intro (ih hd' (List.mem_cons_self hd' tl))
+        intro a a_in_tl
+        apply ih a (List.Mem.tail hd' a_in_tl)
+  
+  def Preorder.getMax_in_M
+    {max : α}
+  : max = R.getMax → max ∈ M := by
+    simp [getMax, M_def]
+    intro max_def
+    let h := getMax.aux_legit max_def
+    intro a
+    apply h a (F.all_in_elems a)
 end
