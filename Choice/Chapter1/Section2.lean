@@ -53,6 +53,19 @@ section
   : WellFoundedLT α :=
     Finite.to_wellFoundedLT
 
+  instance instWellFounded_of_Finite_Preorder
+    [R : Preorder α]
+    [F : Finite α]
+  : IsWellFounded α R.lt :=
+    F.wellFoundedP
+  
+  instance
+    [R : Preorder α]
+    [F : Finite α]
+  : WellFoundedRelation α where
+    rel := R.lt
+    wf := instWellFounded_of_Finite_Preorder.wf
+
 
 
   def Finite.elems_not_nil
@@ -297,18 +310,74 @@ section
         contradiction
       contradiction
 
-  def Preorder.cexMax
+  def Preorder.maxOfNotMax
+    [R : Preorder α]
     [F : Finite α]
     (a : α)
     (not_M_a : a ∉ M)
   : α :=
     let cex := getMaxCex a not_M_a
-    -- use getMaxCex_is_cex to get `cex < a` and prove termination
     if h : cex ∈ M
     then cex
-    else cexMax cex h
-  -- termination_by cexMax a _ =>
-  --   F.wellFoundedP
+    else
+      maxOfNotMax cex h
+  termination_by maxOfNotMax _ R F a h =>
+    a
+  decreasing_by {
+    simp_wf
+    exact R.getMaxCex_is_cex rfl
+  }
+
+  lemma Preorder.maxOfNotMax_is_max
+    [R : Preorder α]
+    [F : Finite α]
+    {a : α} {not_M_a : a ∉ M}
+  : maxOfNotMax a not_M_a ∈ M := by
+    unfold maxOfNotMax
+    simp
+    split <;> try assumption
+    case inr h =>
+      apply maxOfNotMax_is_max (a := getMaxCex a not_M_a)
+  termination_by maxOfNotMax_is_max a _ =>
+    a
+  decreasing_by {
+    simp_wf
+    exact R.getMaxCex_is_cex rfl
+  }
+
+  lemma Preorder.maxOfNotMax_lt
+    [R : Preorder α]
+    [F : Finite α]
+    {a : α} {not_M_a : a ∉ M}
+  : maxOfNotMax a not_M_a < a := by
+    unfold maxOfNotMax
+    simp
+    split
+    case inl h =>
+      apply R.getMaxCex_is_cex
+      rfl
+    case inr h =>
+      let ih :=
+        maxOfNotMax_lt (a := getMaxCex a not_M_a) (not_M_a := h)
+      let h : getMaxCex a not_M_a < a :=
+        R.getMaxCex_is_cex rfl
+      apply Trans.trans ih h
+  termination_by maxOfNotMax_lt a _ =>
+    a
+  decreasing_by {
+    simp_wf
+    exact R.getMaxCex_is_cex rfl
+  }
+
+  theorem Preorder.max_of_not_max
+    [R : Preorder α]
+    [_F : Finite α]
+  : ∀ a, a ∉ M → ∃ max, max < a ∧ max ∈ R.M :=
+    fun a not_M_a => ⟨
+      R.maxOfNotMax a not_M_a,
+      R.maxOfNotMax_lt,
+      R.maxOfNotMax_is_max
+    ⟩
 
   def Preorder.maxOf (a : α) : α :=
     if h : a ∈ R.M then a else getMaxCex a h
