@@ -381,8 +381,4 @@ section
 
   def Preorder.maxOf (a : α) : α :=
     if h : a ∈ R.M then a else getMaxCex a h
-  
-  -- theorem Preorder.maxOf_eq_or_lt
-  --   {a max : α}
-  -- : max = maxOf a
 end
