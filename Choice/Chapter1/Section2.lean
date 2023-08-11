@@ -30,7 +30,7 @@ section
   abbrev Finite.invℕ [F : Finite α] : F.Idx → α :=
     F.elems.get
   
-  abbrev Finite.all_in_elems [F : Finite α] : ∀ (a : α), a ∈ F.elems := by
+  abbrev Finite.all_in_elems (F : Finite α) : ∀ (a : α), a ∈ F.elems := by
     intro a
     let h_get_a := F.sanity_α a
     rw [←h_get_a]
