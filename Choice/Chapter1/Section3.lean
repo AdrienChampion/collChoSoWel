@@ -42,11 +42,18 @@ section lemma_1_b
   
   Original formulation omits the necessary assumption `Inhabited α`. -/
   theorem lemma_1_b
+    (α : Type u)
     [R : Preorder α]
     [_F : Finite α]
     [_I : Inhabited α]
   : ∃ max, max ∈ R.M :=
     ⟨R.getMax, R.getMax_in_M rfl⟩
+
+  abbrev Preorder.lemma_1_b
+    [Preorder α]
+    [Finite α]
+    [Inhabited α]
+  := Choice.lemma_1_b α
 end lemma_1_b
 
 
@@ -129,7 +136,7 @@ end lemma_1_c
 
 section lemma_1_d
   /-- Lemma 1.d. -/
-  theorem Rel.lemma_1_d
+  theorem lemma_1_d
     [R : Preorder α]
     {best : α}
     (C_best : best ∈ R.C)
@@ -149,7 +156,45 @@ end lemma_1_d
 
 
 
--- section lemma_1_e
+section lemma_1_e
+
+  theorem lemma_1_e_mp
+    [R : Preorder α]
+    [F : Finite α]
+    [I : Inhabited α]
+  : (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) → (R.C = R.M) := by
+    intro h
+    let ⟨max, M_max⟩ := R.lemma_1_b
+    apply lemma_1_d (best := max)
+    apply Decidable.byContradiction
+    intro not_C_max
+    let ⟨cex, not_max_lt_cex⟩ := R.bestCex not_C_max
+    let cex_lt_max : cex < max := by
+      simp [R.lt_def]
+      apply And.intro _ not_max_lt_cex
+      simp [R.M_def] at M_max
+      let tmp := M_max cex
+      simp only [R.lt_def, not_and_or, not_not] at tmp
+      cases tmp with
+      | inl h =>
+        
+        sorry
+      | inr h =>
+        sorry
+    sorry
+
+  theorem lemma_1_e_mpr
+    [R : Preorder α]
+    [_F : Finite α]
+    [_I : Inhabited α]
+  : (R.C = R.M) → (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) := by
+    intro h a b M_a M_b
+    let C_a : a ∈ R.C := by rw [h] ; assumption
+    let C_b : b ∈ R.C := by rw [h] ; assumption
+    simp [R.equiv_def]
+    apply And.intro (C_a b) (C_b a)
+
+
 --   variable
 --     {α : Type u}
 
@@ -531,4 +576,4 @@ end lemma_1_d
 --     --   apply Decidable.byContradiction
 --     --   intro h
 --     --   exact h_a_R_a' h
--- end lemma_1_e
+end lemma_1_e

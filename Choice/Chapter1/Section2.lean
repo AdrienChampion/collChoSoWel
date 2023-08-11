@@ -47,7 +47,7 @@ section
   instance [I : Finite α] : _root_.Finite α :=
     .intro I.bijℕ
 
-  def wellFoundedP
+  def Finite.wellFoundedP
     [Preorder α]
     [Finite α]
   : WellFoundedLT α :=
@@ -129,19 +129,6 @@ section
     else
       Preorder.isMax_iff_in_M.not.mp h
       |> isFalse
-
-  theorem Preorder.maxCex : a ∉ M → ∃ (b : α), b < a := by
-    simp [M_def]
-    intro b h
-    exact ⟨b, h⟩
-  
-  theorem Preorder.maxCexInv : (∃ (b : α), b < a) → a ∉ M := by
-    simp [M_def]
-    intro b h
-    exact ⟨b, h⟩
-  
-  theorem Preorder.not_max_iff_cex : a ∉ M ↔ ∃ (b : α), b < a :=
-    ⟨maxCex, maxCexInv⟩
 
 
 
@@ -256,4 +243,77 @@ section
     let h := getMax.aux_legit max_def
     intro a
     apply h a (F.all_in_elems a)
+
+
+
+  theorem Preorder.maxCex : a ∉ M → ∃ (b : α), b < a := by
+    simp [M_def]
+    intro b h
+    exact ⟨b, h⟩
+  
+  theorem Preorder.maxCexInv : (∃ (b : α), b < a) → a ∉ M := by
+    simp [M_def]
+    intro b h
+    exact ⟨b, h⟩
+  
+  theorem Preorder.not_max_iff_cex : a ∉ M ↔ ∃ (b : α), b < a :=
+    ⟨maxCex, maxCexInv⟩
+
+  def Preorder.getMaxCex
+    (a : α)
+    (not_M_a : a ∉ M)
+  : α :=
+    match h : F.elems.find? fun b => b < a with
+    | some cex => cex
+    | none => by
+      let tmp b := List.find?_eq_none.mp h b (F.all_in_elems b)
+      let M_a : a ∈ M := by
+        intro b
+        let ⟨b, b_lt_a⟩ := b
+        let tmp := tmp b
+        simp at tmp
+        contradiction
+      contradiction
+    
+  theorem Preorder.getMaxCex_is_cex
+    {a cex : α}
+    {not_M_a : a ∉ M}
+  : cex = R.getMaxCex a not_M_a → cex < a := by
+    simp [getMaxCex]
+    split
+    case h_1 cex' h_cex' =>
+      let h := List.find?_some h_cex'
+      intro cex_def
+      rw [cex_def]
+      simp at h
+      assumption
+    case h_2 find?_none =>
+      let tmp b := List.find?_eq_none.mp find?_none b (F.all_in_elems b)
+      let M_a : a ∈ M := by
+        intro b
+        let ⟨b, b_lt_a⟩ := b
+        let tmp := tmp b
+        simp at tmp
+        contradiction
+      contradiction
+
+  def Preorder.cexMax
+    [F : Finite α]
+    (a : α)
+    (not_M_a : a ∉ M)
+  : α :=
+    let cex := getMaxCex a not_M_a
+    -- use getMaxCex_is_cex to get `cex < a` and prove termination
+    if h : cex ∈ M
+    then cex
+    else cexMax cex h
+  -- termination_by cexMax a _ =>
+  --   F.wellFoundedP
+
+  def Preorder.maxOf (a : α) : α :=
+    if h : a ∈ R.M then a else getMaxCex a h
+  
+  -- theorem Preorder.maxOf_eq_or_lt
+  --   {a max : α}
+  -- : max = maxOf a
 end
