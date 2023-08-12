@@ -8,7 +8,7 @@ namespace Choice
 
 
 class ProtoOrder (α : Type u) extends LE α, LT α, HasEquiv α where
-  decidableRel : DecidableRel le
+  decidableRel : DecidableRel toLE.le
   decidableEq : DecidableEq α
   lt_def {a b : α} : a < b ↔ a ≤ b ∧ ¬ b ≤ a
   equiv_def {a b : α} : a ≈ b ↔ a ≤ b ∧ b ≤ a
