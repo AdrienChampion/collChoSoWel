@@ -691,3 +691,74 @@ section lemma_1_f
     ∧ Total T.le
   := ⟨P.totalize, P.totalize_subrel, P.totalize_total⟩
 end lemma_1_f
+
+
+
+section lemma_1_g
+  /-- Extends a sub-preorder, *i.e.* a preorder on `Set α`. -/
+  def Preorder.extended
+    {S : Set α}
+    [DecidableEq α]
+    [∀ a, Decidable (a ∈ S)]
+    (P : Preorder S)
+  : Preorder α :=
+    let le a b :=
+      if h : a ∈ S ∧ b ∈ S
+      then P.le ⟨a, h.left⟩ ⟨b, h.right⟩
+      else a = b
+    let le_trans a b c : le a b → le b c → le a c := by
+      if h_ab : a ∈ S ∧ b ∈ S then
+        simp [h_ab]
+        if h_c : c ∈ S then
+          simp [h_c]
+          apply P.le_trans
+        else
+          simp [h_c]
+          intro _ b_eq_c
+          rw [b_eq_c] at h_ab
+          let fls := h_c h_ab.right
+          contradiction
+      else
+        simp [h_ab]
+        intro a_eq_b
+        rw [a_eq_b]
+        exact id
+    {
+      le := le,
+      lt := fun a b => le a b ∧ ¬ le b a,
+      Equiv := fun a b => le a b ∧ le b a,
+      le_refl := fun a => by simp [LE.le]
+      le_trans := le_trans
+      decidableRel := fun a b => by
+        simp [LE.le]
+        if h_ab : a ∈ S ∧ b ∈ S then
+          simp [h_ab]
+          if h : P.le ⟨a, h_ab.left⟩ ⟨b, h_ab.right⟩ then
+            apply isTrue h
+          else
+            apply isFalse h
+        else if h : a = b then
+          simp [h_ab, h]
+          apply isTrue .intro
+        else
+          simp [h_ab, h]
+          apply isFalse
+          intro
+          contradiction
+      decidableEq := inferInstance
+      lt_def := by simp [LT.lt]
+      equiv_def := by simp [HasEquiv.Equiv]
+      : Preorder α
+    }
+
+  -- def Preorder.Totalizer.mergeSubTotal
+  --   {P : Preorder α}
+  --   (self : Totalizer P)
+
+  -- theorem lemma_1_g
+  --   (S : Set α)
+  --   (P : Preorder α)
+  --   (h_P : ∀ a ∈ S, ∀ b ∈ S, a ≤ b → a = b)
+  --   (T : Order {a // a ∈ S})
+  -- : ∃ (R : Preorder α), 
+end lemma_1_g
