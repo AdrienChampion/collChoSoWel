@@ -213,48 +213,37 @@ section lemma_1_f
 
   theorem Preorder.Totalizer.leClosure.aux_in_list
     (self : P.Totalizer)
-    {a : α} {l res : List α} {above : Bool}
-  : res = aux self a above l → ∀ b ∈ res, b ∈ l := by
-    intro res_def b b_in_res
-    cases l with
+    {a : α} {l : List α} {above : Bool}
+  : ∀ b ∈ aux self a above l, b ∈ l := by
+    induction l with
     | nil =>
-      simp [aux] at res_def
-      rw [res_def] at b_in_res
+      intros
       contradiction
-    | cons hd tl =>
-      simp only [aux] at res_def
-      if h : hd = b then
-        exact h ▸ List.Mem.head tl
-      else if h_above : above ∧ self.le a hd then
-        simp [h_above, le] at res_def
-        apply List.Mem.tail
-        let sub := aux self a above tl
-        let sub_def : sub = aux self a above tl := rfl
-        apply aux_in_list self sub_def
-        rw [sub_def]
-        rw [res_def] at b_in_res
-        cases b_in_res <;> try contradiction
-        simp only [h_above.left]
-        assumption
-      else if h_below : ¬ above ∧ self.le hd a then
-        simp [h_below, le] at res_def
-        apply List.Mem.tail
-        let sub := aux self a above tl
-        let sub_def : sub = aux self a above tl := rfl
-        apply aux_in_list self sub_def
-        rw [sub_def]
-        rw [res_def] at b_in_res
-        cases b_in_res <;> try contradiction
-        simp only [h_below.left]
-        assumption
-      else
-        split at res_def <;> try contradiction
-        apply List.Mem.tail
-        let sub := aux self a above tl
-        let sub_def : sub = aux self a above tl := rfl
-        apply aux_in_list self sub_def
-        rw [sub_def, ← res_def]
-        assumption
+    | cons hd tl ih =>
+      intro b
+      simp only [aux]
+      split
+      case inl h =>
+        intro b_in_res
+        cases b_in_res ; exact List.Mem.head tl
+        case tail b_in_sub =>
+        let ⟨h_above, _⟩ := h
+        simp [aux, h_above]
+        · apply Or.inr
+          apply ih
+          assumption
+      case inr h =>
+        simp at h
+        split
+        · intro b_in_res
+          cases b_in_res ; exact List.Mem.head tl
+          case tail b_in_sub =>
+          simp [not_and_or] at h
+          apply List.Mem.tail
+          apply ih _ b_in_sub
+        · intro b_in_res
+          apply List.Mem.tail
+          apply ih _ b_in_res
 
 
 
