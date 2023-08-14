@@ -77,7 +77,6 @@ section lemma_1_f
   | root : Legit Raw.root
   | cons (le_a : List α) (a b : α) (b_le : List α) sub :
     ¬ sub.le a b
-    → ¬ sub.le b a
     → (∀ c, c ∈ le_a ↔ sub.le c a)
     → (∀ c, c ∈ b_le ↔ sub.le b c)
     → Legit sub
@@ -90,7 +89,7 @@ section lemma_1_f
     | root => simp [le]
     | cons le_a' a' b' b'_le sub ih =>
       intro legit a
-      let .cons _ _ _ _ _ _ _ _ _ legit_sub := legit
+      let .cons _ _ _ _ _ _ _ _ legit_sub := legit
       simp [le]
       apply Or.inr
       apply ih legit_sub
@@ -106,7 +105,7 @@ section lemma_1_f
     | cons le_x x y y_le sub ih =>
       simp [le]
       intro legit a b c ab bc
-      let .cons _ _ _ _ _ _ _ h_le_x h_y_le legit_sub := legit
+      let .cons _ _ _ _ _ _ h_le_x h_y_le legit_sub := legit
       cases ab <;> cases bc
       case inl.inl dom_ab dom_bc =>
         apply Or.inl ⟨dom_ab.left, dom_bc.right⟩
@@ -262,44 +261,36 @@ section lemma_1_f
   section above
     theorem Preorder.Totalizer.leClosure.aux_above_post_mp
       (self : P.Totalizer)
-      {a : α} {l res : List α}
-    : res = aux self a true l → ∀ b ∈ res, self.le a b := by
-      intro res_def
-      induction l generalizing res with
+      {a : α} {l : List α}
+    : ∀ b ∈ aux self a true l, self.le a b := by
+      induction l with
       | nil =>
-        simp [aux] at res_def
-        rw [res_def]
         intro b _
         contradiction
       | cons hd tl ih =>
-        simp [aux] at res_def
-        split at res_def
+        simp [aux]
+        split
         case inl h =>
-          rw [res_def]
           intro b b_in_res
           cases b_in_res with
           | head tl => exact h
           | tail hd b_in_tl =>
-            exact ih rfl b b_in_tl
+            exact ih b b_in_tl
         case inr h =>
-          exact ih res_def
+          exact ih
 
     theorem Preorder.Totalizer.leClosure.aux_above_post_mpr
       (self : P.Totalizer)
-      {a : α} {l res : List α}
-    : res = aux self a true l → ∀ b ∈ l, self.le a b → b ∈ res := by
-      intro res_def
-      induction l generalizing res with
+      {a : α} {l : List α}
+    : ∀ b ∈ l, self.le a b → b ∈ aux self a true l := by
+      induction l with
       | nil =>
-        simp [aux] at res_def
-        rw [res_def]
         intro b _
         contradiction
       | cons hd tl ih =>
-        simp [aux] at res_def
-        split at res_def
+        simp only [aux]
+        split
         case inl h =>
-          rw [res_def]
           intro b b_in_res
           cases b_in_res with
           | head tl =>
@@ -307,38 +298,40 @@ section lemma_1_f
             exact List.Mem.head _
           | tail hd b_in_tl =>
             intro h
-            let b_in_sub := ih rfl b b_in_tl h
+            let b_in_sub := ih b b_in_tl h
             exact List.Mem.tail _ b_in_sub
         case inr h =>
+          simp only [not_and_or, false_or] at h
           intro b b_in_l h_b
+          simp
           cases b_in_l with
           | head _ => contradiction
           | tail _ h =>
-            exact ih res_def b h h_b
+            exact ih b h h_b
 
     theorem Preorder.Totalizer.leClosure_above_post_mp
       [Finite α]
       (self : P.Totalizer)
-      {a : α} {res : List α}
-    : res = self.leClosure a true → ∀ b ∈ res, self.le a b :=
+      {a : α}
+    : ∀ b ∈ self.leClosure a true, self.le a b :=
       leClosure.aux_above_post_mp self
 
     theorem Preorder.Totalizer.leClosure_above_post_mpr
       [F : Finite α]
       (self : P.Totalizer)
-      {a : α} {res : List α}
-    : res = self.leClosure a true → (∀ b, self.le a b → b ∈ res) :=
-      fun res_def b h_b =>
-        Totalizer.leClosure.aux_above_post_mpr self res_def b (F.all_in_elems b) h_b
+      {a : α}
+    : ∀ b, self.le a b → b ∈ self.leClosure a true :=
+      fun b h_b =>
+        Totalizer.leClosure.aux_above_post_mpr self b (F.all_in_elems b) h_b
 
     theorem Preorder.Totalizer.leClosure_above_post
       [Finite α]
       (self : P.Totalizer)
-      {a : α} {res : List α}
-    : res = self.leClosure a true → (∀ b, b ∈ res ↔ self.le a b) :=
-      fun res_def b => ⟨
-        self.leClosure_above_post_mp res_def b,
-        self.leClosure_above_post_mpr res_def b
+      {a : α}
+    : ∀ b, b ∈ self.leClosure a true ↔ self.le a b :=
+      fun b => ⟨
+        self.leClosure_above_post_mp b,
+        self.leClosure_above_post_mpr b
       ⟩
   end above
 
@@ -347,44 +340,36 @@ section lemma_1_f
   section below
     theorem Preorder.Totalizer.leClosure.aux_below_post_mp
       (self : P.Totalizer)
-      {a : α} {l res : List α}
-    : res = aux self a false l → ∀ b ∈ res, self.le b a := by
-      intro res_def
-      induction l generalizing res with
+      {a : α} {l : List α}
+    : ∀ b ∈ aux self a false l, self.le b a := by
+      induction l with
       | nil =>
-        simp [aux] at res_def
-        rw [res_def]
         intro b _
         contradiction
       | cons hd tl ih =>
-        simp [aux] at res_def
-        split at res_def
+        simp [aux]
+        split
         case inl h =>
-          rw [res_def]
           intro b b_in_res
           cases b_in_res with
           | head tl => exact h
           | tail hd b_in_tl =>
-            exact ih rfl b b_in_tl
+            exact ih b b_in_tl
         case inr h =>
-          exact ih res_def
+          exact ih
 
     theorem Preorder.Totalizer.leClosure.aux_below_post_mpr
       (self : P.Totalizer)
-      {a : α} {l res : List α}
-    : res = aux self a false l → ∀ b ∈ l, self.le b a → b ∈ res := by
-      intro res_def
-      induction l generalizing res with
+      {a : α} {l : List α}
+    : ∀ b ∈ l, self.le b a → b ∈ aux self a false l := by
+      induction l with
       | nil =>
-        simp [aux] at res_def
-        rw [res_def]
         intro b _
         contradiction
       | cons hd tl ih =>
-        simp [aux] at res_def
-        split at res_def
+        simp only [aux]
+        split
         case inl h =>
-          rw [res_def]
           intro b b_in_res
           cases b_in_res with
           | head tl =>
@@ -392,38 +377,44 @@ section lemma_1_f
             exact List.Mem.head _
           | tail hd b_in_tl =>
             intro h
-            let b_in_sub := ih rfl b b_in_tl h
+            let b_in_sub := ih b b_in_tl h
             exact List.Mem.tail _ b_in_sub
         case inr h =>
-          intro b b_in_l h_b
+          intro b b_in_l ba
           cases b_in_l with
-          | head _ => contradiction
+          | head _ =>
+            simp [true_and, ba]
+            split <;> exact List.Mem.head _
           | tail _ h =>
-            exact ih res_def b h h_b
+            simp
+            split
+            <;> try apply List.Mem.tail
+            · exact ih b h ba
+            · exact ih b h ba
 
     theorem Preorder.Totalizer.leClosure_below_post_mp
       [Finite α]
       (self : P.Totalizer)
-      {a : α} {res : List α}
-    : res = self.leClosure a false → ∀ b ∈ res, self.le b a :=
+      {a : α}
+    : ∀ b ∈ self.leClosure a false, self.le b a :=
       leClosure.aux_below_post_mp self
 
     theorem Preorder.Totalizer.leClosure_below_post_mpr
       [F : Finite α]
       (self : P.Totalizer)
-      {a : α} {res : List α}
-    : res = self.leClosure a false → (∀ b, self.le b a → b ∈ res) :=
-      fun res_def b h_b =>
-        Preorder.Totalizer.leClosure.aux_below_post_mpr self res_def b (F.all_in_elems b) h_b
+      {a : α}
+    : (∀ b, self.le b a → b ∈ self.leClosure a false) :=
+      fun b h_b =>
+        Preorder.Totalizer.leClosure.aux_below_post_mpr self b (F.all_in_elems b) h_b
 
     theorem Preorder.Totalizer.leClosure_below_post
       [Finite α]
       (self : P.Totalizer)
-      {a : α} {res : List α}
-    : res = self.leClosure a false → (∀ b, b ∈ res ↔ self.le b a) :=
-      fun res_def b => ⟨
-        self.leClosure_below_post_mp res_def b,
-        self.leClosure_below_post_mpr res_def b
+      {a : α}
+    : (∀ b, b ∈ self.leClosure a false ↔ self.le b a) :=
+      fun b => ⟨
+        self.leClosure_below_post_mp b,
+        self.leClosure_below_post_mpr b
       ⟩
   end below
 
@@ -434,67 +425,162 @@ section lemma_1_f
     (self : P.Totalizer)
     (a b : α)
     (incmp : ¬ self.le a b ∧ ¬ self.le b a)
+    (both : Bool := false)
   : P.Totalizer :=
+    let ⟨incmp_lft, incmp_rgt⟩ := incmp
     let le_a := self.leClosure a false
     let b_le := self.leClosure b true
-    by
-      let _h_le_a :=
-        self.leClosure_below_post (res := le_a) rfl
-      let _h_b_le :=
-        self.leClosure_above_post (res := b_le) rfl
-      cases self with | mk raw raw_legit =>
-      apply mk $ .cons le_a a b b_le raw
-      apply Raw.Legit.cons <;> try assumption
-      · exact incmp.left
-      · exact incmp.right
+    let h_le_a :=
+      self.leClosure_below_post (a := a)
+    let h_b_le :=
+      self.leClosure_above_post (a := b)
+
+    let raw' :=
+      Raw.cons le_a a b b_le self.raw
+    let raw_legit' :=
+      Raw.Legit.cons le_a a b b_le self.raw incmp_lft h_le_a h_b_le self.legit
+    let self' :=
+      Totalizer.mk raw' raw_legit'
+
+    if ¬ both then
+      self'
+    else
+      let le_b := self'.leClosure b false
+      let a_le := self'.leClosure a true
+      let h_le_b :=
+        self'.leClosure_below_post
+      let h_a_le :=
+        self'.leClosure_above_post
+
+      let incmp_rgt' : ¬ self'.le b a := by
+        simp [le]
+        intro h
+        cases h with
+        | inl h =>
+          apply incmp_rgt
+          apply h_le_a b |>.mp
+          exact h.left
+        | inr h =>
+          apply incmp_rgt
+          exact h
+      by
+        apply mk $ .cons le_b b a a_le raw'
+        apply Raw.Legit.cons <;> try assumption
 
   theorem Preorder.Totalizer.add_subrel
     [F : Finite α]
     {self : P.Totalizer}
-    {a' b' : α}
-    {incmp' : ¬ self.le a' b' ∧ ¬ self.le b' a'}
-  : self.instPreorder ⊆ (self.add a' b' incmp').instPreorder := by
+    {x y : α}
+    {incmp' : ¬ self.le x y ∧ ¬ self.le y x}
+    (both : Bool)
+  : self.instPreorder ⊆ (self.add x y incmp' both).instPreorder := by
     intro a b
-    simp [LT.lt, LE.le, le]
+    simp [LT.lt, LE.le, le, Raw.leB]
     apply And.intro
-    · exact Or.inr
-    · intro ab not_ba
-      intro b_le_a
-      cases b_le_a with
-      | inl h =>
-        let .cons _ _ _ _ _ _ _ iff_le_a' iff_b'_le _ :=
-          (self.add a' b' incmp').legit
-        let ba' : self.le b a' :=
-          iff_le_a' b |>.mp h.left
-        let b'a : self.le b' a :=
-          iff_b'_le a |>.mp h.right
-        let aa' : self.le a a' :=
-          self.le_trans _ _ _ ab ba'
-        let b'a' : self.le b' a' :=
-          self.le_trans _ _ _ b'a aa'
-        contradiction
-      | inr ba =>
-        apply Bool.eq_false_iff.mp not_ba
-        assumption
+    · intro h
+      simp [add]
+      split ; split
+      case left.inl incmp_xy incmp_yx h_both =>
+        simp
+        apply Or.inr $ Or.inr h
+      case left.inr incmp_xy incmp_yx h_both =>
+        simp
+        apply Or.inr h
+    · rw [Bool.eq_false_iff, Bool.eq_false_iff]
+      intro ab not_ba
+      simp [add]
+      -- let .cons _ _ _ _ := self.add x y incmp' both |>.legit
+      split ; split
+      case right.inl incmp_lft incmp_rgt _ =>
+        simp [Raw.leB, Bool.eq_false_iff]
+        intro h
+        cases h with
+        | inl h =>
+          let h_by :=
+            leClosure_below_post_mp _ b h.left
+          let h_xa :=
+            leClosure_above_post_mp _ a h.right
+          simp [le] at h_by
+          simp [le] at h_xa
+          cases h_by <;> cases h_xa
+          case inl.inl h_bx h_ya =>
+            apply incmp_rgt
+            let bx := self.leClosure_below_post_mp b h_bx.left
+            let ya := self.leClosure_above_post_mp a h_ya.right
+            apply self.le_trans y a x ya
+            apply self.le_trans a b x ab bx
+          case inl.inr h_bx xa =>
+            apply not_ba
+            let bx := self.leClosure_below_post_mp b h_bx.left
+            apply self.le_trans b x a bx xa
+          case inr.inl b_le_y h_ya =>
+            apply not_ba
+            let ya := self.leClosure_above_post_mp a h_ya.right
+            apply self.le_trans b y a b_le_y ya
+          case inr.inr b_le_y x_le_a =>
+            apply incmp_lft
+            apply self.le_trans x a y x_le_a
+            apply self.le_trans a b y ab b_le_y
+        | inr h => cases h with
+        | inl h =>
+          apply incmp_rgt
+          let bx :=
+            self.leClosure_below_post_mp b h.left
+          let ya :=
+            self.leClosure_above_post_mp a h.right
+          apply self.le_trans y a x ya
+          apply self.le_trans a b x ab bx
+        | inr h =>
+          contradiction
+      case right.inr incmp_lft incmp_rgt _ =>
+        simp [Bool.eq_false_iff]
+        intro h
+        cases h
+        case inl h =>
+          apply incmp_rgt
+          let bx :=
+            self.leClosure_below_post_mp b h.left
+          let ya :=
+            self.leClosure_above_post_mp a h.right
+          apply self.le_trans y a x ya
+          apply self.le_trans a b x ab bx
+        case inr h =>
+          contradiction
+
+
 
   theorem Preorder.Totalizer.add_post
     [F : Finite α]
     {self : P.Totalizer}
     {a b : α}
     {incmp : ¬ self.le a b ∧ ¬ self.le b a}
-  : self.add a b incmp |>.le a b := by
+    {both : Bool}
+  : self.add a b incmp both |>.le a b := by
     let _ : a ∈ self.leClosure a false :=
       let h_le_a :=
-        self.leClosure_below_post (res := self.leClosure a false) rfl
+        self.leClosure_below_post
       h_le_a a |>.mpr (self.le_refl a)
     let _ : b ∈ self.leClosure b true :=
       let h_b_le :=
-        self.leClosure_above_post (res := self.leClosure b true) rfl
+        self.leClosure_above_post
       h_b_le b |>.mpr (self.le_refl b)
     cases self with | mk raw raw_legit =>
-    simp [le]
-    apply Or.inl
-    apply And.intro <;> assumption
+    simp [add]
+    split ; case mk incmp_lft incmp_rgt =>
+    split
+    case inl _ =>
+      simp [le]
+      apply Or.inr
+      apply Or.inl
+      apply And.intro
+      · assumption
+      · assumption
+    case inr _ =>
+      simp [le]
+      apply Or.inl
+      apply And.intro
+      · assumption
+      · assumption
 
 
 
@@ -529,7 +615,7 @@ section lemma_1_f
         case inl h =>
           let ih := ih (self := self.add a' hd h) a b
           let sub :=
-            self.add_subrel (a' := a') (b' := hd) (incmp' := h) a b
+            self.add_subrel (x := a') (y := hd) (incmp' := h) false a b
           apply And.intro
           · intro ab
             apply ih.left
@@ -751,9 +837,52 @@ section lemma_1_g
       : Preorder α
     }
 
-  -- def Preorder.Totalizer.mergeSubTotal
-  --   {P : Preorder α}
-  --   (self : Totalizer P)
+  -- def Preorder.mergeSubTotal
+  --   [F : Finite α]
+  --   {S : Set α}
+  --   [∀ a, Decidable (a ∈ S)]
+  --   (P : Preorder α)
+  --   (T : Order S)
+  --   (h_P : ∀ (a b : α), (h_a : a ∈ S) → (h_b : b ∈ S) → P.le a b → a = b)
+  -- : Preorder α :=
+  --   let t := Preorder.Totalizer.empty P
+  --   allPairs t F.elems |>.instPreorder
+  -- where
+  --   allPairs t
+  --   | [] => t
+  --   | a::tl =>
+  --     if S_a : a ∈ S then
+  --       allPairs (allElems t a S_a F.elems) tl
+  --     else
+  --       allPairs t tl
+  --   allElems t a S_a
+  --   | [] => t
+  --   | b::tl =>
+  --     if h_ne : a = b then
+  --       t
+  --     else if S_b : b ∈ S then
+  --       if not_ab : ¬ t.le a b then
+  --         if T_ab : T.le ⟨a, S_a⟩ ⟨b, S_b⟩ then
+  --           allElems
+  --             (t.add a b (by
+  --               apply And.intro not_ab
+  --               · intro ab
+  --                 apply h_ne
+  --                 apply h_P a b S_a S_b
+  --                 simp at h
+  --                 apply h
+  --                 apply T_ab
+  --                 simp [LE.le]
+  --             ))
+  --             a
+  --             S_a
+  --             tl
+  --         else
+  --           allElems t a S_a tl
+  --       else
+  --         sorry
+  --     else
+  --       sorry
 
   -- theorem lemma_1_g
   --   (S : Set α)
