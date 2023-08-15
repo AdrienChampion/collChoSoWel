@@ -61,7 +61,7 @@ section
   
   instance
     [R : Preorder α]
-    [F : Finite α]
+    [_F : Finite α]
   : WellFoundedRelation α where
     rel := R.lt
     wf := instWellFounded_of_Finite_Preorder.wf
