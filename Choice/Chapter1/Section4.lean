@@ -968,7 +968,7 @@ section lemma_1_f
     · apply ih
       assumption
 
-  theorem Preorder.Totalizer.addForCmpl.subrel
+  theorem Preorder.Totalizer.addForCmpl_subrel
     [_F : Finite α]
     {self : P.Totalizer}
     {C : P.Complement}
