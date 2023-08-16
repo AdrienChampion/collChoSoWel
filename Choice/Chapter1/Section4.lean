@@ -107,7 +107,7 @@ section
 
   theorem Preorder.Totalizer.Raw.le_trans
     (self : Totalizer.Raw P)
-  : self.Legit → ∀ a b c, self.le a b → self.le b c → self.le a c := by
+  : self.Legit → ∀ {a b c}, self.le a b → self.le b c → self.le a c := by
     induction self with
     | root =>
       simp [le]
@@ -126,7 +126,7 @@ section
         · apply h_le_x a |>.mpr
           let bx :=
             h_le_x b |>.mp dom_bc.left
-          apply ih legit_sub _ _ _ sub_ab bx
+          apply ih legit_sub sub_ab bx
         · exact dom_bc.right
       case inl.inr dom_ab sub_bc =>
         left
@@ -135,9 +135,9 @@ section
         · apply h_y_le c |>.mpr
           let yb :=
             h_y_le b |>.mp dom_ab.right
-          apply ih legit_sub _ _ _ yb sub_bc
+          apply ih legit_sub yb sub_bc
       case inr.inr sub_ab sub_bc =>
-        exact ih legit_sub _ _ _ sub_ab sub_bc |> Or.inr
+        exact ih legit_sub sub_ab sub_bc |> Or.inr
 
 
 
@@ -210,12 +210,10 @@ section
 
     abbrev le :=
       self.raw.le
-    theorem le_refl : ∀ a, self.le a a :=
-      self.raw.le_refl self.legit
     @[simp]
-    theorem le_refl' {a} : self.le a a :=
+    theorem le_refl {a} : self.le a a :=
       self.raw.le_refl self.legit a
-    theorem le_trans : ∀ a b c, self.le a b → self.le b c → self.le a c :=
+    theorem le_trans : ∀ {a b c}, self.le a b → self.le b c → self.le a c :=
       self.raw.le_trans self.legit
     @[simp]
     abbrev lt a b :=
@@ -278,8 +276,8 @@ section
       toLE := t.instLETotalizer
       toLT := t.instLTTotalizer
       toHasEquiv := t.instHasEquivTotalizer
-      le_refl := t.le_refl
-      le_trans := t.le_trans
+      le_refl _ := t.le_refl
+      le_trans _ _ _ h h' := t.le_trans h h'
       lt_def := by
         simp [LT.lt, LE.le]
       equiv_def := by
@@ -757,7 +755,7 @@ section
     := by
       simp [addCmpl]
       left
-      apply And.intro self.le_refl' self.le_refl'
+      apply And.intro self.le_refl self.le_refl
   end addCmpl
 
 

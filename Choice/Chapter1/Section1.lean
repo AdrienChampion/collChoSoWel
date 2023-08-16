@@ -70,6 +70,9 @@ section
     le_refl : Reflexive le
     le_trans : Transitive le
 
+  abbrev Preorder.le_trans' [P : Preorder α] : ∀ {a b c : α}, a ≤ b → b ≤ c → a ≤ c :=
+    fun {a b c} => @Preorder.le_trans α P a b c
+
   instance instRootPreorderOfPreorder [R : Preorder α] : _root_.Preorder α where
     toLE := R.toLE
     toLT := R.toLT
