@@ -10,7 +10,14 @@ namespace Choice
 section subrelation
   @[simp]
   abbrev Preorder.semiSubrel {S : Set α} (O : Order S) (P : Preorder α) : Prop :=
-    ∀ (a b : {x // x ∈ S}), (P.le a b → O.le a b)
+    ∀ (a b : {x // x ∈ S}), P.le a b → O.le a b
+  @[simp]
+  abbrev Preorder.semiSubrel' {S : Set α} (O : Order S) (P : Preorder α) : Prop :=
+    ∀ (a b : {x // x ∈ S}), P.le a b → O.le b a → P.le b a
+
+  @[simp]
+  abbrev Order.subrel {S: Set α} (O : Order S) (P : Preorder α) : Prop :=
+    ∀ (a b : S), (O.le a b → P.le a b) ∧ (O.lt a b → ¬ P.le b a)
 
   /-- Definition 1*5, sub-relation, noted `R₁ ⊆ R₂`. -/
   abbrev Preorder.subrel (P₁ P₂ : Preorder α) : Prop :=
@@ -153,6 +160,9 @@ section lemma_1_f
 
     abbrev Preorder.Complement.semiSubrel : Preorder α → Prop :=
       Preorder.semiSubrel self.Ord
+
+    abbrev Preorder.Complement.semiSubrel' : Preorder α → Prop :=
+      Preorder.semiSubrel' self.Ord
     
     theorem Preorder.Complement.raw_cons
       {le_x : List α} {x y : self.Incmp} {y_le : List α} {sub : Totalizer.Raw P}
@@ -498,48 +508,48 @@ section lemma_1_f
   def Preorder.Totalizer.add
     [F : Finite α]
     (self : P.Totalizer)
-    (a b : α)
-    (incmp : ¬ self.le a b ∧ ¬ self.le b a)
+    (x y : α)
+    (incmp : ¬ self.le x y ∧ ¬ self.le y x)
     (both : Bool := false)
   : P.Totalizer :=
     let ⟨incmp_lft, incmp_rgt⟩ := incmp
-    let le_a := self.leClosure a false
-    let b_le := self.leClosure b true
-    let h_le_a :=
-      self.leClosure_below_post (a := a)
-    let h_b_le :=
-      self.leClosure_above_post (a := b)
+    let le_x := self.leClosure x false
+    let y_le := self.leClosure y true
+    let h_le_x :=
+      self.leClosure_below_post (a := x)
+    let h_y_le :=
+      self.leClosure_above_post (a := y)
 
     let raw' :=
-      Raw.cons le_a a b b_le self.raw
+      Raw.cons le_x x y y_le self.raw
     let raw_legit' :=
-      Raw.Legit.cons le_a a b b_le self.raw incmp_lft h_le_a h_b_le self.legit
+      Raw.Legit.cons le_x x y y_le self.raw incmp_lft h_le_x h_y_le self.legit
     let self' :=
       Totalizer.mk raw' raw_legit'
 
     if ¬ both then
       self'
     else
-      let le_b := self'.leClosure b false
-      let a_le := self'.leClosure a true
-      let h_le_b :=
+      let le_y := self'.leClosure y false
+      let x_le := self'.leClosure x true
+      let h_le_y :=
         self'.leClosure_below_post
-      let h_a_le :=
+      let h_x_le :=
         self'.leClosure_above_post
 
-      let incmp_rgt' : ¬ self'.le b a := by
+      let incmp_rgt' : ¬ self'.le y x := by
         simp [le]
         intro h
         cases h with
         | inl h =>
           apply incmp_rgt
-          apply h_le_a b |>.mp
+          apply h_le_x y |>.mp
           exact h.left
         | inr h =>
           apply incmp_rgt
           exact h
       by
-        apply mk $ .cons le_b b a a_le raw'
+        apply mk $ .cons le_y y x x_le raw'
         apply Raw.Legit.cons <;> try assumption
 
   theorem Preorder.Totalizer.add_subrel
@@ -627,18 +637,18 @@ section lemma_1_f
   theorem Preorder.Totalizer.add_post
     [F : Finite α]
     {self : P.Totalizer}
-    {a b : α}
-    {incmp : ¬ self.le a b ∧ ¬ self.le b a}
+    {x y : α}
+    {incmp : ¬ self.le x y ∧ ¬ self.le y x}
     {both : Bool}
-  : self.add a b incmp both |>.le a b := by
-    let _ : a ∈ self.leClosure a false :=
-      let h_le_a :=
+  : self.add x y incmp both |>.le x y := by
+    let _ : x ∈ self.leClosure x false :=
+      let h_le_x :=
         self.leClosure_below_post
-      h_le_a a |>.mpr (self.le_refl a)
-    let _ : b ∈ self.leClosure b true :=
-      let h_b_le :=
+      h_le_x x |>.mpr (self.le_refl x)
+    let _ : y ∈ self.leClosure y true :=
+      let h_y_le :=
         self.leClosure_above_post
-      h_b_le b |>.mpr (self.le_refl b)
+      h_y_le y |>.mpr (self.le_refl y)
     cases self with | mk raw raw_legit =>
     simp [add]
     split ; case mk incmp_lft incmp_rgt =>
@@ -662,17 +672,17 @@ section lemma_1_f
   theorem Preorder.Totalizer.add_both_post
     [F : Finite α]
     {self : P.Totalizer}
-    {a b : α}
-    {incmp : ¬ self.le a b ∧ ¬ self.le b a}
-  : self.add a b incmp true |>.le b a := by
-    let _ : a ∈ self.leClosure a false :=
-      let h_le_a :=
+    {x y : α}
+    {incmp : ¬ self.le x y ∧ ¬ self.le y x}
+  : self.add x y incmp true |>.le y x := by
+    let _ : x ∈ self.leClosure x false :=
+      let h_le_x :=
         self.leClosure_below_post
-      h_le_a a |>.mpr (self.le_refl a)
-    let _ : b ∈ self.leClosure b true :=
-      let h_b_le :=
+      h_le_x x |>.mpr (self.le_refl x)
+    let _ : y ∈ self.leClosure y true :=
+      let h_y_le :=
         self.leClosure_above_post
-      h_b_le b |>.mpr (self.le_refl b)
+      h_y_le y |>.mpr (self.le_refl y)
     cases self with | mk raw raw_legit =>
     simp [add]
     split ; case mk incmp_lft incmp_rgt =>
@@ -683,7 +693,7 @@ section lemma_1_f
     rw [leClosure_below_post, leClosure_above_post]
     simp [incmp_rgt]
     apply Or.inl
-    apply And.intro (raw.le_refl raw_legit b) (raw.le_refl raw_legit a)
+    apply And.intro (raw.le_refl raw_legit y) (raw.le_refl raw_legit x)
 
 
 
@@ -691,19 +701,19 @@ section lemma_1_f
     [F : Finite α]
     (self : P.Totalizer)
     (C : P.Complement)
-    (a b : C.Incmp)
-    (incmp : ¬ self.le a b ∧ ¬ self.le b a)
+    (x h_yx : C.Incmp)
+    (incmp : ¬ self.le x h_yx ∧ ¬ self.le h_yx x)
   : P.Totalizer :=
-    if h_ab : C.le a b then
-      if C.le b a then
-        self.add a b incmp true
+    if h_xh_yx : C.le x h_yx then
+      if C.le h_yx x then
+        self.add x h_yx incmp true
       else
-        self.add a b incmp false
-    else if h_ba : C.le b a then
-      self.add b a incmp.symm false
+        self.add x h_yx incmp false
+    else if h_h_yxx : C.le h_yx x then
+      self.add h_yx x incmp.symm false
     else by
       exfalso
-      cases C.Ord.le_total a b
+      cases C.Ord.le_total x h_yx
       <;> contradiction
     
   def Preorder.Totalizer.addCmpl_subrel
@@ -726,7 +736,8 @@ section lemma_1_f
     {x y : C.Incmp}
     {incmp : ¬ self.le x y ∧ ¬ self.le y x}
   : C.semiSubrel self.toPreorder
-  → C.semiSubrel (self.addCmpl C x y incmp).toPreorder := by
+    → C.semiSubrel (self.addCmpl C x y incmp).toPreorder
+  := by
     intro ih
     intro a b
     simp [LE.le, addCmpl]
@@ -791,7 +802,81 @@ section lemma_1_f
         apply C.Ord.le_trans y_x h₂
       | inr h =>
         exact ih _ _ h
-    
+
+  def Preorder.Totalizer.addCmpl_semiSubrel'
+    [F : Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+    {x y : C.Incmp}
+    {incmp : ¬ self.le x y ∧ ¬ self.le y x}
+  : C.semiSubrel' self.toPreorder
+    → C.semiSubrel' (self.addCmpl C x y incmp).toPreorder
+  := by
+    -- intro ih
+    -- intro a b
+    -- simp [LE.le, addCmpl]
+    -- split <;> split <;> try contradiction
+    -- case inl.inl x_y y_x =>
+    --   simp [add]
+    --   split
+    --   simp [le, leClosure_below_post, leClosure_above_post]
+    --   intro h ; cases h
+    --   case inl h =>
+    --     let ⟨h₁, h₂⟩ := h
+    --     cases h₁ <;> cases h₂
+    --     case inl.inl h₁ h₂ =>
+    --       let h₁ := ih _ _ h₁.left
+    --       let h₂ := ih _ _ h₂.right
+    --       apply C.Ord.le_trans h₁
+    --       apply C.Ord.le_trans x_y h₂
+    --     case inl.inr h₁ h₂ =>
+    --       let h₁ := ih _ _ h₁.left
+    --       let h₂ := ih _ _ h₂
+    --       apply C.Ord.le_trans h₁ h₂
+    --     case inr.inl h₁ h₂ =>
+    --       let h₁ := ih _ _ h₁
+    --       let h₂ := ih _ _ h₂.right
+    --       apply C.Ord.le_trans h₁ h₂
+    --     case inr.inr h₁ h₂ =>
+    --       let h₁ := ih _ _ h₁
+    --       let h₂ := ih _ _ h₂
+    --       apply C.Ord.le_trans h₁
+    --       apply C.Ord.le_trans y_x h₂
+    --   case inr h =>
+    --     cases h with
+    --     | inl h =>
+    --       let h₁ := ih _ _ h.left
+    --       let h₂ := ih _ _ h.right
+    --       apply C.Ord.le_trans h₁
+    --       apply C.Ord.le_trans x_y h₂
+    --     | inr h =>
+    --       exact ih _ _ h
+    -- case inl.inr x_y not_y_x =>
+    --   simp [add]
+    --   split
+    --   simp [le, leClosure_below_post, leClosure_above_post]
+    --   intro h
+    --   cases h with
+    --   | inl h =>
+    --     let h₁ := ih _ _ h.left
+    --     let h₂ := ih _ _ h.right
+    --     apply C.Ord.le_trans h₁
+    --     apply C.Ord.le_trans x_y h₂
+    --   | inr h =>
+    --     exact ih _ _ h
+    -- case inr.inl not_x_y y_x =>
+    --   simp [add]
+    --   split
+    --   simp [le, leClosure_below_post, leClosure_above_post]
+    --   intro h ; cases h with
+    --   | inl h =>
+    --     let h₁ := ih _ _ h.left
+    --     let h₂ := ih _ _ h.right
+    --     apply C.Ord.le_trans h₁
+    --     apply C.Ord.le_trans y_x h₂
+    --   | inr h =>
+    --     exact ih _ _ h
+
   def Preorder.Totalizer.addCmpl_post
     [F : Finite α]
     {self : P.Totalizer}
@@ -820,13 +905,13 @@ section lemma_1_f
   def Preorder.Totalizer.addFor
     [F : Finite α]
     (self : P.Totalizer)
-    (a : α)
+    (x : α)
   : P.Totalizer :=
     aux self F.elems
   where aux self : List α → P.Totalizer
-    | b::rest =>
-      if h : ¬ self.le a b ∧ ¬ self.le b a
-      then aux (self.add a b h) rest
+    | y::rest =>
+      if h : ¬ self.le x y ∧ ¬ self.le y x
+      then aux (self.add x y h) rest
       else aux self rest
     | [] => self
 
@@ -834,40 +919,40 @@ section lemma_1_f
     theorem Preorder.Totalizer.addFor.aux_subrel
       [F : Finite α]
       {self : P.Totalizer}
-      {a' : α} {elems : List α}
-    : self.toPreorder ⊆ (aux a' self elems).toPreorder := by
+      {a : α} {elems : List α}
+    : self.toPreorder ⊆ (aux a self elems).toPreorder := by
       simp [Subset, subrel, LT.lt, LE.le, lt]
       induction elems generalizing self with
       | nil =>
-        intro a b
+        intro _ _
         simp [aux]
       | cons hd tl ih =>
-        intro a b
+        intro x y
         simp only [aux]
         split
         case inl h =>
-          let ih := ih (self := self.add a' hd h) a b
+          let ih := ih (self := self.add a hd h) x y
           let sub :=
-            self.add_subrel (x := a') (y := hd) (incmp' := h) false a b
+            self.add_subrel (x := a) (y := hd) (incmp' := h) false x y
           apply And.intro
-          · intro ab
+          · intro xy
             apply ih.left
-            apply sub.left ab
-          · intro ab not_ba
+            apply sub.left xy
+          · intro xy not_yx
             apply ih.right
-            · apply sub.left ab
+            · apply sub.left xy
             · apply Bool.eq_false_iff.mpr
-              apply sub.right ⟨ab, Bool.eq_false_iff.mp not_ba⟩
+              apply sub.right ⟨xy, Bool.eq_false_iff.mp not_yx⟩
         case inr _ =>
           apply ih
 
     theorem Preorder.Totalizer.addFor.aux_post
       [F : Finite α]
       {self : P.Totalizer}
-      {a : α} {elems : List α}
-    : ∀ b ∈ elems,
-        (addFor.aux a self elems |>.le a b) ∨ (addFor.aux a self elems |>.le b a)
-    := fun b b_in_elems => by
+      {x : α} {elems : List α}
+    : ∀ y ∈ elems,
+        (addFor.aux x self elems |>.le x y) ∨ (addFor.aux x self elems |>.le y x)
+    := fun y y_in_elems => by
       cases elems with
       | nil =>
         contradiction
@@ -875,39 +960,39 @@ section lemma_1_f
         simp only [aux]
         split
         case inl h =>
-          cases b_in_elems with
+          cases y_in_elems with
           | head _ =>
             apply Or.inl
-            apply aux_subrel a b |>.left
+            apply aux_subrel x y |>.left
             apply add_post
-          | tail _ b_in_tl =>
-            apply aux_post b b_in_tl
+          | tail _ y_in_tl =>
+            apply aux_post y y_in_tl
         case inr h =>
-          cases b_in_elems with
+          cases y_in_elems with
           | head _ =>
             simp only [not_and_or, not_not] at h
             cases h
             · apply Or.inl
-              apply aux_subrel a b |>.left
+              apply aux_subrel x y |>.left
               assumption
             · apply Or.inr
-              apply aux_subrel b a |>.left
+              apply aux_subrel y x |>.left
               assumption
-          | tail _ b_in_tl =>
-            apply aux_post b b_in_tl
+          | tail _ y_in_tl =>
+            apply aux_post y y_in_tl
 
     theorem Preorder.Totalizer.addFor_subrel
       [F : Finite α]
       {self : P.Totalizer}
-      {a' : α}
-    : self.toPreorder ⊆ (self.addFor a').toPreorder := by
+      {x : α}
+    : self.toPreorder ⊆ (self.addFor x).toPreorder := by
       apply addFor.aux_subrel
 
     theorem Preorder.Totalizer.addFor_post
       [F : Finite α]
       {self : P.Totalizer}
-      {a : α}
-    : ∀ b, (self.addFor a |>.le a b) ∨ (self.addFor a |>.le b a) := by
+      {x : α}
+    : ∀ y, (self.addFor x |>.le x y) ∨ (self.addFor x |>.le y x) := by
       intro b
       simp only [addFor]
       apply addFor.aux_post
@@ -920,14 +1005,14 @@ section lemma_1_f
     [F : Finite α]
     (self : P.Totalizer)
     (C : P.Complement)
-    (a : C.Incmp)
+    (x : C.Incmp)
   : P.Totalizer :=
     aux self F.elems
   where aux self : List α → P.Totalizer
-    | b::rest =>
-      if incmp : ¬ self.le a b ∧ ¬ self.le b a then
-        if h_b : b ∈ C.Incmp then
-          aux (self.addCmpl C a ⟨b, h_b⟩ incmp) rest
+    | y::rest =>
+      if incmp : ¬ self.le x y ∧ ¬ self.le y x then
+        if h_y : y ∈ C.Incmp then
+          aux (self.addCmpl C x ⟨y, h_y⟩ incmp) rest
         else
           aux self rest
       else
@@ -967,6 +1052,55 @@ section lemma_1_f
     · apply addCmpl_semiSubrel h
     · apply ih
       assumption
+
+  def Preorder.Totalizer.addForCmpl.aux_post
+    [F : Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+    {x : C.Incmp}
+    {elems : List α}
+    {semiSubrel : C.semiSubrel self.toPreorder}
+  : ∀ y ∈ elems, (h_y : y ∈ C.Incmp)
+    → (C.le x ⟨y, h_y⟩ → (addForCmpl.aux C x self elems |>.le x y))
+    ∧ (C.le ⟨y, h_y⟩ x → (addForCmpl.aux C x self elems |>.le y x))
+  := by
+    sorry
+    -- intro y y_in_elems Incmp_y
+    -- induction elems generalizing self
+    -- <;> try contradiction
+    -- case cons hd tl ih =>
+    -- cases y_in_elems
+    -- case head =>
+    --   let ih' {self} :=
+    --     addForCmpl.aux_subrel
+    --       (self := self) (C := C) (x := x) (elems := tl)
+    --   simp [LE.le, le] at ih'
+    --   simp [aux]
+    --   split
+    --   case inl incmp =>
+    --     let ih_add :=
+    --       addCmpl_post
+    --         (self := self) (C := C) (x := x) (y := ⟨y, Incmp_y⟩)
+    --         (incmp := by simp ; apply incmp)
+    --     apply And.intro
+    --       (fun h => (ih' x y).left $ ih_add.left h)
+    --       (fun h => (ih' y x).left $ ih_add.right h)
+    --   case inr tmp =>
+    --     intro h
+    --     sorry
+    --   case inr.left =>
+    --     sorry
+    --   case inr.right =>
+    --     sorry
+    -- case tail y_in_tl =>
+    --   simp [aux]
+    --   split ; split
+    --   · apply ih
+    --     assumption
+    --   · apply ih
+    --     assumption
+    --   · apply ih
+    --     assumption
 
   theorem Preorder.Totalizer.addForCmpl_subrel
     [_F : Finite α]
@@ -1013,27 +1147,27 @@ section lemma_1_f
     [F : Finite α]
     (self : P.Totalizer)
     {elems : List α}
-  : ∀ a ∈ elems,
-    ∀ b, (addMissing.aux self elems).le a b ∨ (addMissing.aux self elems).le b a
+  : ∀ x ∈ elems,
+    ∀ y, (addMissing.aux self elems).le x y ∨ (addMissing.aux self elems).le y x
   := by
-    intro a a_in_elems b
-    induction elems generalizing self b with
+    intro x x_in_elems y
+    induction elems generalizing self y with
     | nil => contradiction
     | cons hd tl ih =>
       simp [aux]
-      cases a_in_elems with
+      cases x_in_elems with
       | head _ =>
-        let h := self.addFor_post (a := a) b
-        let sub := aux_subrel (self.addFor a) (elems := tl)
+        let h := self.addFor_post (x := x) y
+        let sub := aux_subrel (self.addFor x) (elems := tl)
         cases h with
         | inl h =>
           apply Or.inl
-          exact (sub a b).left h
+          exact (sub x y).left h
         | inr h =>
           apply Or.inr
-          exact (sub b a).left h
-      | tail _ a_in_tl =>
-        exact ih (self.addFor hd) a_in_tl b
+          exact (sub y x).left h
+      | tail _ x_in_tl =>
+        exact ih (self.addFor hd) x_in_tl y
 
   def Preorder.Totalizer.addMissing_subrel
     [Finite α]
@@ -1047,6 +1181,105 @@ section lemma_1_f
   : ∀ a b, self.addMissing.le a b ∨ self.addMissing.le b a :=
     fun a b =>
       addMissing.aux_post self a (F.all_in_elems a) b
+
+
+
+  def Preorder.Totalizer.addMissingCmpl
+    [F : Finite α]
+    (self : P.Totalizer)
+    (C : P.Complement)
+  : P.Totalizer :=
+    aux self F.elems
+  where aux self : List α → P.Totalizer
+    | a::rest =>
+      if h_a : a ∈ C.Incmp then
+        aux (self.addForCmpl C ⟨a, h_a⟩) rest
+      else
+        aux self rest
+    | [] => self
+
+  def Preorder.Totalizer.addMissingCmpl.aux_subrel
+    [Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+    {elems : List α}
+  : self.toPreorder ⊆ (aux C self elems).toPreorder := by
+    induction elems generalizing self
+    <;> simp [aux, subrel_refl]
+    case cons a tl ih =>
+    split
+    case inl h_a =>
+      apply subrel_trans addForCmpl.aux_subrel
+      exact ih
+    · exact ih
+  
+  def Preorder.Totalizer.addMissingCmpl.aux_semiSubrel
+    [Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+    {elems : List α}
+  : C.semiSubrel self.toPreorder
+  → C.semiSubrel (aux C self elems).toPreorder := by
+    intro h
+    induction elems generalizing self
+    <;> simp [aux, subrel_refl]
+    · assumption
+    case cons a tl ih =>
+    split
+    case inl h_a =>
+      apply ih
+      apply addForCmpl_semiSubrel h
+    · exact ih h
+  
+  def Preorder.Totalizer.addMissingCmpl.aux_post₁
+    [Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+    {elems : List α}
+  : C.semiSubrel self.toPreorder
+  → ∀ (a b : C.Incmp),
+    a.1 ∈ elems → C.le a b → (aux C self elems).le a b
+  := by
+    intro h a b h_a h_b
+    induction elems generalizing self
+    <;> simp [aux, subrel_refl]
+    <;> try contradiction
+    case cons hd tl ih =>
+    cases h_a with
+    | head _ =>
+      split
+      · sorry
+      · sorry
+    | tail _ a_in_tl =>
+      split
+      · apply ih _ a_in_tl
+        apply addForCmpl_semiSubrel h
+      · apply ih h a_in_tl
+
+  def Preorder.Totalizer.addMissingCmpl_subrel
+    [Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+  : self.toPreorder ⊆ (self.addMissingCmpl C).toPreorder :=
+    addMissingCmpl.aux_subrel
+
+  def Preorder.Totalizer.addMissingCmpl_semiSubrel
+    [Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+  : C.semiSubrel self.toPreorder
+  → C.semiSubrel (self.addMissingCmpl C).toPreorder :=
+    addMissingCmpl.aux_semiSubrel
+
+  def Preorder.Totalizer.addMissingCmpl_post
+    [Finite α]
+    {self : P.Totalizer}
+    {C : P.Complement}
+  : C.semiSubrel self.toPreorder
+  → C.Ord.subrel (self.addMissingCmpl C).toPreorder := by
+    intro h
+    -- induction elems 
+    sorry
 
 
 
