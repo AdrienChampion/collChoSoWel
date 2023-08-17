@@ -192,6 +192,119 @@ section
       | inr =>
         apply ih
         assumption
+    
+    abbrev Preorder.Complement.extended
+      [P : Preorder α]
+      (self : P.Complement)
+    : Preorder α :=
+      let le a b :=
+        let _ := self.decMem
+        if a = b then
+          True
+        else
+          if a_in_Incmp : a ∈ self.Incmp then
+            if b_in_Incmp : b ∈ self.Incmp then
+              self.le ⟨a, a_in_Incmp⟩ ⟨b, b_in_Incmp⟩
+            else
+              False
+          else
+            False
+      let lt a b := le a b ∧ ¬ le b a
+      let Equiv a b := le a b ∧ le b a
+      {
+        le,
+        lt,
+        Equiv,
+        decidableRel := fun a b => by
+          let _ := P.decidableEq
+          simp [LE.le]
+          if a_eq_b : a = b then
+            simp [a_eq_b]
+            exact isTrue True.intro
+          else if a_in_Incmp : a ∈ self.Incmp then
+            if b_in_Incmp : b ∈ self.Incmp then
+              simp [a_eq_b, a_in_Incmp, b_in_Incmp]
+              apply self.Ord.decidableRel
+            else
+              simp [a_eq_b, a_in_Incmp, b_in_Incmp]
+              apply isFalse
+              trivial
+          else
+            simp [a_eq_b, a_in_Incmp]
+            apply isFalse
+            trivial
+        decidableEq :=
+          P.decidableEq,
+        lt_def := by
+          rfl
+        equiv_def := by
+          rfl
+        le_refl := fun a => by
+          simp [LE.le]
+        le_trans := by
+          intro a b c
+          simp [LE.le]
+          split <;> simp [*]
+          · split <;> simp [*] 
+            split <;> simp [*]
+            split <;> simp [*]
+            split <;> simp [*]
+            split <;> simp [*]
+            · rename b = c => b_eq_c
+              rename ¬ c ∈ self.Incmp => c_in_Incmp
+              rw [← b_eq_c] at c_in_Incmp
+              contradiction
+            · split <;> simp [*]
+              split <;> simp [*]
+              exact fun h h' => self.le_trans h h'
+      : Preorder α}
+
+    theorem Preorder.Complement.extended_post_incmp
+      [P : Preorder α]
+      {self : P.Complement}
+    : ∀ {a b : self.inIncmp},
+      self.extended.le a b ↔ self.le a b
+    := fun {a b} => by
+      simp [LE.le]
+      split <;> simp [LE.le]
+      case inl h =>
+      rw [Subtype.ext h]
+      simp
+      apply self.le_refl
+
+    theorem Preorder.Complement.extended_post_not_incmp
+      [P : Preorder α]
+      {self : P.Complement}
+    : ∀ {a b},
+      (a ∉ self.Incmp ∨ b ∉ self.Incmp)
+      → (self.extended.le a b ↔ a = b)
+    := fun {a b} => by
+      intro disj
+      cases disj
+      <;> (simp [LE.le] ; simp [*] ; constructor)
+      <;> (try intro ; simp [*])
+      <;> (
+        apply Decidable.byContradiction
+        intro h
+        simp [h] at *
+      )
+
+    theorem Preorder.Complement.extended_post
+      [P : Preorder α]
+      {self : P.Complement}
+    : ∀ {a b},
+      self.extended.le a b ↔ (
+        if h : a ∈ self.Incmp ∧ b ∈ self.Incmp
+        then self.le ⟨a, h.left⟩ ⟨b, h.right⟩
+        else a = b
+      )
+    := fun {a b} => by
+      split
+      case inl h =>
+        apply self.extended_post_incmp (a := ⟨a, h.left⟩) (b := ⟨b, h.right⟩)
+      case inr h =>
+        simp only [not_and_or] at h
+        apply self.extended_post_not_incmp h
   end complement
 
 
@@ -1033,6 +1146,54 @@ section
     : ∀ (z z' : C.inIncmp), C.le z z' → (self.addMissingCmpl C).le z z' :=
       fun z z' =>
         addMissingCmpl.aux_post z z' (F.all_in_elems z)
+
+
+    theorem Preorder.Totalizer.addMissingCmpl_subrel
+      [_F : Finite α]
+      {self : P.Totalizer}
+      {C : P.Complement}
+      {sane : self.Sane C}
+    : P ⊆ (self.addMissingCmpl C).toPreorder :=
+      let add_sane := self.addMissingCmpl_sane sane
+      add_sane.subrel
+
+
+    theorem Preorder.Totalizer.addMissingCmpl_cmpl_subrel
+      [F : Finite α]
+      {self : P.Totalizer}
+      {C : P.Complement}
+      {sane : self.Sane C}
+    : C.extended ⊆ (self.addMissingCmpl C).toPreorder := by
+      let add_sane := self.addMissingCmpl_sane sane
+      intro a b
+      rw [C.extended_post]
+      simp [LE.le]
+      split
+      case inl h =>
+        let a' : C.inIncmp := ⟨a, h.left⟩
+        let b' : C.inIncmp := ⟨b, h.right⟩
+        simp [h]
+        intro cmpl_a_b
+        constructor
+        · apply self.addMissingCmpl_post a' b' cmpl_a_b
+        · split
+          case inl b_eq_a =>
+            intro
+            contradiction
+          case inr b_ne_a =>
+            intro
+            rw [Bool.eq_false_iff]
+            apply add_sane.ssr' ⟨a, h.left⟩ ⟨b, h.right⟩
+            · apply self.addMissingCmpl_post
+              assumption
+            · assumption
+      case inr h =>
+        intro a_eq_b
+        simp only [not_and_or] at h
+        cases h <;> (
+          simp [*, a_eq_b]
+          apply (self.addMissingCmpl C).le_refl
+        )
   end addMissingCmpl
 
 end
