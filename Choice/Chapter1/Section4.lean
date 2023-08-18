@@ -1196,4 +1196,253 @@ section
         )
   end addMissingCmpl
 
+
+
+  section addBoth
+    def Preorder.Totalizer.add
+      [_F : Finite α]
+      (self : P.Totalizer)
+      (x y : α)
+      (incmp : ¬ self.le x y ∧ ¬ self.le y x)
+    : P.Totalizer :=
+      let le_x := self.leClosure x false
+      let y_le := self.leClosure y true
+      let h_le_x :=
+        self.leClosure_below_post (a := x)
+      let h_y_le :=
+        self.leClosure_above_post (a := y)
+
+      let self' :=
+        Totalizer.mk
+          (Raw.cons le_x x y y_le self.raw)
+          (Raw.Legit.cons le_x x y y_le self.raw incmp.left h_le_x h_y_le self.legit)
+
+      let le_y := self'.leClosure y false
+      let x_le := self'.leClosure x true
+      let h_le_y :=
+        self'.leClosure_below_post (a := y)
+      let h_x_le :=
+        self'.leClosure_above_post (a := x)
+
+      let incmp_rgt : ¬ self'.le y x :=
+        by simp [*]
+
+      Totalizer.mk
+        (Raw.cons le_y y x x_le self'.raw)
+        (Raw.Legit.cons le_y y x x_le self'.raw incmp_rgt h_le_y h_x_le self'.legit)
+
+    theorem Preorder.Totalizer.add_subrel
+      [_F : Finite α]
+      {self : P.Totalizer}
+      {x y : α}
+      (incmp : ¬ self.le x y ∧ ¬ self.le y x)
+    : self.toPreorder ⊆ (self.add x y incmp).toPreorder := by
+      simp only [Subset, subrel, LE.le]
+      intro a b self_a_b
+      constructor
+      · simp [add]
+        apply Or.inr (Or.inr self_a_b)
+      · intro not_self_b_a
+        simp [add]
+        intro add_x_a
+        cases add_x_a
+        case inl h =>
+          let ⟨h₁, h₂⟩ := h
+          cases h₁ <;> cases h₂
+          case inl.inl h₁ h₂ =>
+            apply incmp.right
+            apply self.le_trans h₂.right
+            apply self.le_trans self_a_b h₁.left
+          case inl.inr h₁ h₂ =>
+            let _ := self.le_trans h₁.left h₂
+            contradiction
+          case inr.inl h₁ h₂ =>
+            let _ := self.le_trans h₁ h₂.right
+            contradiction
+          case inr.inr h₁ h₂ =>
+            apply incmp.left
+            apply self.le_trans h₂
+            apply self.le_trans self_a_b h₁
+        case inr h =>
+          cases h
+          case inl h =>
+            apply incmp.right
+            apply self.le_trans h.right
+            apply self.le_trans self_a_b h.left
+          case inr h =>
+            contradiction
+
+    theorem Preorder.Totalizer.add_post
+      [_F : Finite α]
+      {self : P.Totalizer}
+      {x y : α}
+      (incmp : ¬ self.le x y ∧ ¬ self.le y x)
+    : (self.add x y incmp).le x y ∧ (self.add x y incmp).le y x := by
+      simp [add]
+  end addBoth
+
+
+
+  section addFor
+    def Preorder.Totalizer.addFor
+      [F : Finite α]
+      (self : P.Totalizer)
+      (x : α)
+    : P.Totalizer :=
+      aux self F.elems
+    where aux self : List α → P.Totalizer
+      | [] => self
+      | y :: rest =>
+        if incmp : ¬ self.le x y ∧ ¬ self.le y x then
+          let self :=
+            self.add x y incmp
+          aux self rest
+        else
+          aux self rest
+
+    theorem Preorder.Totalizer.addFor.aux_subrel
+      [F : Finite α]
+      {self : P.Totalizer}
+      {x : α}
+      {elems : List α}
+    : self.toPreorder ⊆ (aux x self elems).toPreorder := by
+      intro a b
+      simp only [LE.le]
+      intro self_a_b
+      induction elems generalizing self with
+      | nil =>
+        simp [aux]
+        assumption
+      | cons y rest ih =>
+        simp only [aux]
+        split
+        case inl incmp =>
+          let h_add := self.add_subrel incmp a b self_a_b
+          let ih := ih h_add.left
+          apply And.intro ih.left
+          intro not_self_b_a
+          apply ih.right
+          apply h_add.right not_self_b_a
+        case inr h =>
+          apply ih self_a_b
+
+    theorem Preorder.Totalizer.addFor_subrel
+      [_F : Finite α]
+      {self : P.Totalizer}
+      (x : α)
+    : self.toPreorder ⊆ (self.addFor x).toPreorder :=
+      addFor.aux_subrel
+
+    theorem Preorder.Totalizer.addFor.aux_post
+      [F : Finite α]
+      {self : P.Totalizer}
+      {x : α}
+      {elems : List α}
+    : ∀ b ∈ elems, (aux x self elems).le x b ∨ (aux x self elems).le b x := by
+      intro b b_in_elems
+      induction elems generalizing self with
+      | nil => contradiction
+      | cons y rest ih =>
+        simp only [aux]
+        split
+        case inl incmp =>
+          cases b_in_elems
+          · left
+            let h_add := add_post incmp |>.left
+            apply aux_subrel x b h_add |>.left
+          · apply ih
+            assumption
+        case inr incmp =>
+          simp only [not_and_or, not_not] at incmp
+          cases b_in_elems
+          · cases incmp
+            · left
+              apply aux_subrel x b (by assumption) |>.left
+            · right
+              apply aux_subrel b x (by assumption) |>.left
+          · apply ih
+            assumption
+
+    theorem Preorder.Totalizer.addFor_post
+      [F : Finite α]
+      {self : P.Totalizer}
+    : ∀ x b, (self.addFor x).le x b ∨ (self.addFor x).le b x := by
+      intro x b
+      apply addFor.aux_post
+      exact F.all_in_elems b
+  end addFor
+
+
+
+  section addMissing
+    def Preorder.Totalizer.addMissing
+      [F : Finite α]
+      (self : P.Totalizer)
+    : P.Totalizer :=
+      aux self F.elems
+    where aux self : List α → P.Totalizer
+      | [] => self
+      | x :: rest =>
+        aux (self.addFor x) rest
+
+    theorem Preorder.Totalizer.addMissing.aux_subrel
+      [F : Finite α]
+      {self : P.Totalizer}
+      {elems : List α}
+    : self.toPreorder ⊆ (aux self elems).toPreorder := by
+      intro a b
+      simp only [LE.le]
+      intro self_a_b
+      induction elems generalizing self with
+      | nil =>
+        simp [aux]
+        assumption
+      | cons x rest ih =>
+        simp only [aux]
+        let h_addFor :=
+          self.addFor_subrel x a b self_a_b
+        let ih := ih h_addFor.left
+        apply And.intro ih.left
+        intro not_self_b_a
+        apply ih.right
+        apply h_addFor.right
+        assumption
+
+    theorem Preorder.Totalizer.addMissing_subrel
+      [_F : Finite α]
+      {self : P.Totalizer}
+    : self.toPreorder ⊆ self.addMissing.toPreorder :=
+      addMissing.aux_subrel
+
+    theorem Preorder.Totalizer.addMissing.aux_post
+      [F : Finite α]
+      {self : P.Totalizer}
+      {elems : List α}
+    : ∀ a b, a ∈ elems → (aux self elems).le a b ∨ (aux self elems).le b a := by
+      intro a b
+      intro a_in_elems
+      induction elems generalizing self with
+      | nil =>
+        contradiction
+      | cons x rest ih =>
+        simp only [aux]
+        cases a_in_elems
+        · let h_addFor :=
+            self.addFor_post a b
+          cases h_addFor
+          · left
+            apply aux_subrel a b (by assumption) |>.left
+          · right
+            apply aux_subrel b a (by assumption) |>.left
+        · apply ih
+          assumption
+
+    theorem Preorder.Totalizer.addMissing_post
+      [F : Finite α]
+      {self : P.Totalizer}
+    : ∀ a b, self.addMissing.le a b ∨ self.addMissing.le b a := by
+      intro a b
+      apply addMissing.aux_post
+      exact F.all_in_elems a
+  end addMissing
 end
