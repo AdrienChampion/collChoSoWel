@@ -57,9 +57,9 @@ section subrelation
 
   /-- Definition 1*6, order/pre-order compatibility. -/
   abbrev Order.compatWith (O : Order α) (P : Preorder α) : Prop :=
-    P.subrel O.toPreorder
+    P.subrel O
   abbrev Preorder.compat (P : Preorder α) (O : Order α) : Prop :=
-    P.subrel O.toPreorder
+    P.subrel O
 end subrelation
 
 
@@ -138,6 +138,127 @@ section
           apply ih legit_sub yb sub_bc
       case inr.inr sub_ab sub_bc =>
         exact ih legit_sub sub_ab sub_bc |> Or.inr
+    
+  abbrev Preorder.extended
+    {S : Set α}
+    [decMemS : ∀ a, Decidable (a ∈ S)]
+    [decEq : DecidableEq α]
+    (P : Preorder S)
+  : Preorder α :=
+    let le a b :=
+      let _ := decMemS
+      if a = b then
+        True
+      else
+        if a_in_S : a ∈ S then
+          if b_in_S : b ∈ S then
+            P.le ⟨a, a_in_S⟩ ⟨b, b_in_S⟩
+          else
+            False
+        else
+          False
+    let lt a b := le a b ∧ ¬ le b a
+    let Equiv a b := le a b ∧ le b a
+    {
+      le,
+      lt,
+      Equiv,
+      decidableRel := fun a b => by
+        let _ := P.decidableEq
+        simp [LE.le]
+        if a_eq_b : a = b then
+          simp [a_eq_b]
+          exact isTrue True.intro
+        else if a_in_S : a ∈ S then
+          if b_in_S : b ∈ S then
+            simp [a_eq_b, a_in_S, b_in_S]
+            apply P.decidableRel
+          else
+            simp [a_eq_b, a_in_S, b_in_S]
+            apply isFalse
+            trivial
+        else
+          simp [a_eq_b, a_in_S]
+          apply isFalse
+          trivial
+      decidableEq :=
+        decEq,
+      lt_def := by
+        rfl
+      equiv_def := by
+        rfl
+      le_refl := fun a => by
+        simp [LE.le]
+      le_trans := by
+        intro a b c
+        simp [LE.le]
+        split <;> simp [*]
+        · split <;> simp [*] 
+          split <;> simp [*]
+          split <;> simp [*]
+          split <;> simp [*]
+          split <;> simp [*]
+          · rename b = c => b_eq_c
+            rename ¬ c ∈ S => c_in_Incmp
+            rw [← b_eq_c] at c_in_Incmp
+            contradiction
+          · split <;> simp [*]
+            split <;> simp [*]
+            exact fun h h' => P.le_trans h h'
+    : Preorder α}
+
+  theorem Preorder.extended_post_S
+    {S : Set α}
+    [decMemS : ∀ a, Decidable (a ∈ S)]
+    [decEq : DecidableEq α]
+    {P : Preorder S}
+  : ∀ {a b : S},
+    P.extended.le a b ↔ P.le a b
+  := fun {a b} => by
+    simp [LE.le]
+    split <;> simp [LE.le]
+    case inl h =>
+    rw [Subtype.ext h]
+    simp
+    apply P.le_refl
+
+  theorem Preorder.extended_post_not_S
+    {S : Set α}
+    [decMemS : ∀ a, Decidable (a ∈ S)]
+    [decEq : DecidableEq α]
+    {P : Preorder S}
+  : ∀ {a b},
+    (a ∉ S ∨ b ∉ S)
+    → (P.extended.le a b ↔ a = b)
+  := fun {a b} => by
+    intro disj
+    cases disj
+    <;> (simp [LE.le] ; simp [*] ; constructor)
+    <;> (try intro ; simp [*])
+    <;> (
+      apply Decidable.byContradiction
+      intro h
+      simp [h] at *
+    )
+
+  theorem Preorder.extended_post
+    {S : Set α}
+    [decMemS : ∀ a, Decidable (a ∈ S)]
+    [decEq : DecidableEq α]
+    {P : Preorder S}
+  : ∀ {a b},
+    P.extended.le a b ↔ (
+      if h : a ∈ S ∧ b ∈ S
+      then P.le ⟨a, h.left⟩ ⟨b, h.right⟩
+      else a = b
+    )
+  := fun {a b} => by
+    split
+    case inl h =>
+      apply P.extended_post_S (a := ⟨a, h.left⟩) (b := ⟨b, h.right⟩)
+    case inr h =>
+      simp only [not_and_or] at h
+      apply P.extended_post_not_S h
 
 
 
@@ -145,7 +266,7 @@ section
     structure Preorder.Complement (P : Preorder α) where
       Incmp : Set α
       decMem : ∀ a, Decidable (a ∈ Incmp)
-      isIncmp : ∀ a b, a ∈ Incmp → b ∈ Incmp → ¬ P.le a b ∧ ¬ P.le b a
+      isIncmp : ∀ a b, a ∈ Incmp → b ∈ Incmp → (P.le a b ↔ a = b)
       Ord : Order Incmp
 
     instance {C : P.Complement} {a : α} : Decidable (a ∈ C.Incmp) :=
@@ -160,10 +281,13 @@ section
     @[simp]
     abbrev Preorder.Complement.le_refl :=
       self.Ord.le_refl
+    abbrev Preorder.Complement.le_refl' (h : a = b) : self.le a b := by
+      rw [h]
+      exact self.le_refl b
     @[simp]
     abbrev Preorder.Complement.le_trans :=
       self.Ord.le_trans
-    
+
     @[simp]
     abbrev Preorder.Complement.inIncmp : Type u := {x // x ∈ self.Incmp}
 
@@ -197,67 +321,7 @@ section
       [P : Preorder α]
       (self : P.Complement)
     : Preorder α :=
-      let le a b :=
-        let _ := self.decMem
-        if a = b then
-          True
-        else
-          if a_in_Incmp : a ∈ self.Incmp then
-            if b_in_Incmp : b ∈ self.Incmp then
-              self.le ⟨a, a_in_Incmp⟩ ⟨b, b_in_Incmp⟩
-            else
-              False
-          else
-            False
-      let lt a b := le a b ∧ ¬ le b a
-      let Equiv a b := le a b ∧ le b a
-      {
-        le,
-        lt,
-        Equiv,
-        decidableRel := fun a b => by
-          let _ := P.decidableEq
-          simp [LE.le]
-          if a_eq_b : a = b then
-            simp [a_eq_b]
-            exact isTrue True.intro
-          else if a_in_Incmp : a ∈ self.Incmp then
-            if b_in_Incmp : b ∈ self.Incmp then
-              simp [a_eq_b, a_in_Incmp, b_in_Incmp]
-              apply self.Ord.decidableRel
-            else
-              simp [a_eq_b, a_in_Incmp, b_in_Incmp]
-              apply isFalse
-              trivial
-          else
-            simp [a_eq_b, a_in_Incmp]
-            apply isFalse
-            trivial
-        decidableEq :=
-          P.decidableEq,
-        lt_def := by
-          rfl
-        equiv_def := by
-          rfl
-        le_refl := fun a => by
-          simp [LE.le]
-        le_trans := by
-          intro a b c
-          simp [LE.le]
-          split <;> simp [*]
-          · split <;> simp [*] 
-            split <;> simp [*]
-            split <;> simp [*]
-            split <;> simp [*]
-            split <;> simp [*]
-            · rename b = c => b_eq_c
-              rename ¬ c ∈ self.Incmp => c_in_Incmp
-              rw [← b_eq_c] at c_in_Incmp
-              contradiction
-            · split <;> simp [*]
-              split <;> simp [*]
-              exact fun h h' => self.le_trans h h'
-      : Preorder α}
+      self.Ord.toPreorder.extended
 
     theorem Preorder.Complement.extended_post_incmp
       [P : Preorder α]
@@ -398,29 +462,57 @@ section
       decidableRel := t.instDecLETotalizer
       decidableEq := inferInstance
 
-    -- instance {t : P.Totalizer} : Preorder α :=
-    --   t.toPreorder
+    instance [P : Preorder α] : Coe P.Totalizer (Preorder α) where
+      coe T := T.toPreorder
       
     structure Preorder.Totalizer.Sane
       (T : P.Totalizer) (C : P.Complement)
     where
-      subrel : P ⊆ T.toPreorder
-      ssr : C.semiSubrel T.toPreorder
-      ssr' : C.semiSubrel' T.toPreorder
+      subrel : P ⊆ T
+      ssr : C.semiSubrel T
+      ssr' : C.semiSubrel' T
       sanity₁ : T.dualSanity₁ C
       sanity₂ : T.dualSanity₂ C
 
+
+    theorem Preorder.Totalizer.empty_Sane
+      (P : Preorder α) (C : P.Complement)
+    : Sane (empty P) C := by
+      simp [empty]
+      constructor
+      · simp [Subset, subrel, LE.le]
+      · simp [Complement.semiSubrel, LE.le]
+        intro a a_in_Incmp b b_in_Incmp P_a_b
+        let h := C.isIncmp a b a_in_Incmp b_in_Incmp |>.mp P_a_b
+        apply C.le_refl'
+        apply Subtype.eq
+        simp [h]
+      · simp [Complement.semiSubrel', LE.le]
+        intro a a_in_Incmp b b_in_Incmp P_a_b not_C_b_a
+        let h := C.isIncmp a b a_in_Incmp b_in_Incmp |>.mp P_a_b
+        exfalso
+        apply not_C_b_a
+        apply C.le_refl'
+        apply Subtype.eq
+        simp [h]
+      · simp [dualSanity₁, LE.le]
+        intro a a_in_Incmp b _not_b_in_Incmp P_a_b
+        exists a
+      · simp [dualSanity₂, LE.le]
+        intro a b a_in_Incmp _not_b_in_Incmp P_a_b
+        exists b
+    
+    theorem Preorder.Totalizer.empty_subrel
+      (P : Preorder α)
+    : P ⊆ (empty P) := by
+      intro a b
+      simp [LE.le, empty]
+
+    theorem Preorder.Totalizer.empty_le_iff
+    : ∀ (a b), (empty P).le a b ↔ P.le a b := by
+      intro a b
+      simp [le]
   end
-
-  theorem Preorder.Totalizer.empty_le
-  : ∀ (a b), (empty P).le a b ↔ P.le a b := by
-    intro a b
-    simp [le]
-
-  def Preorder.Totalizer.empty_subrel
-  : P ⊆ (empty P).toPreorder := by
-    intro a b
-    simp [P.lt_def, LE.le, empty_le]
 
 
 
@@ -682,8 +774,8 @@ section
       {x y : C.Incmp}
       (incmp : ¬ self.le x y)
       (cmpl_x_y : C.le x y)
-    : C.semiSubrel self.toPreorder
-      → C.semiSubrel (self.addCmpl C x y incmp).toPreorder
+    : C.semiSubrel self
+      → C.semiSubrel (self.addCmpl C x y incmp)
     := by
       intro ssr
       intro a b
@@ -704,8 +796,8 @@ section
       {x y : C.Incmp}
       (incmp : ¬ self.le x y)
       (x_y : C.le x y)
-    : C.semiSubrel self.toPreorder
-      → C.semiSubrel' (self.addCmpl C x y incmp).toPreorder
+    : C.semiSubrel self
+      → C.semiSubrel' (self.addCmpl C x y incmp)
     := by
       intro ssr
       intro a b
@@ -790,8 +882,8 @@ section
       (incmp : ¬ self.le x y)
       (sanity₁ : self.dualSanity₁ C)
       (sanity₂ : self.dualSanity₂ C)
-      (ih : P ⊆ self.toPreorder)
-    : P ⊆ (self.addCmpl C x y incmp).toPreorder
+      (ih : P ⊆ self)
+    : P ⊆ self.addCmpl C x y incmp
     := by
       intro a b
       simp [LE.le, le, addCmpl]
@@ -808,24 +900,29 @@ section
         let ⟨self_b_x, self_y_a⟩ := wrong
         if Incmp_a : a ∈ C.Incmp then
           if Incmp_b : b ∈ C.Incmp then
-            let incmp := C.isIncmp a b Incmp_a Incmp_b
-            exact incmp.left P_a_b
+            let incmp := C.isIncmp a b Incmp_a Incmp_b |>.mp P_a_b
+            apply P_not_b_a
+            rw [incmp]
           else
             let ⟨x', P_b_x', _⟩ := sanity₂ b x Incmp_b self_b_x
             let P_a_x' := P.le_trans P_a_b P_b_x'
-            let incmp := C.isIncmp a x' Incmp_a x'.2
-            exact incmp.left P_a_x'
+            let incmp := C.isIncmp a x'.1 Incmp_a x'.2 |>.mp P_a_x'
+            rw [← incmp] at P_b_x'
+            contradiction
         else if Incmp_b : b ∈ C.Incmp then
           let ⟨y', _, P_y'_a⟩ := sanity₁ y a Incmp_a self_y_a
           let P_y'_b := P.le_trans P_y'_a P_a_b
-          let incmp := C.isIncmp y' b y'.2 Incmp_b
-          exact incmp.left P_y'_b
+          let incmp := C.isIncmp y'.1 b y'.2 Incmp_b |>.mp P_y'_b
+          rw [incmp] at P_y'_a
+          contradiction
         else
           let ⟨y', _, P_y'_a⟩ := sanity₁ y a Incmp_a self_y_a
           let ⟨x', P_b_x', _⟩ := sanity₂ b x Incmp_b self_b_x
           let P_y'_x' := P.le_trans P_y'_a (P.le_trans P_a_b P_b_x')
-          let incmp := C.isIncmp y' x' y'.2 x'.2
-          exact incmp.left P_y'_x'
+          let incmp := C.isIncmp y'.1 x'.1 y'.2 x'.2 |>.mp P_y'_x'
+          rw [incmp] at P_y'_a
+          let wrong := P.le_trans P_b_x' P_y'_a
+          contradiction
 
     theorem Preorder.Totalizer.addCmpl_sane
       [_F : Finite α]
@@ -1153,7 +1250,7 @@ section
       {self : P.Totalizer}
       {C : P.Complement}
       {sane : self.Sane C}
-    : P ⊆ (self.addMissingCmpl C).toPreorder :=
+    : P ⊆ self.addMissingCmpl C :=
       let add_sane := self.addMissingCmpl_sane sane
       add_sane.subrel
 
@@ -1163,7 +1260,7 @@ section
       {self : P.Totalizer}
       {C : P.Complement}
       {sane : self.Sane C}
-    : C.extended ⊆ (self.addMissingCmpl C).toPreorder := by
+    : C.extended ⊆ self.addMissingCmpl C := by
       let add_sane := self.addMissingCmpl_sane sane
       intro a b
       rw [C.extended_post]
@@ -1236,7 +1333,7 @@ section
       {self : P.Totalizer}
       {x y : α}
       (incmp : ¬ self.le x y ∧ ¬ self.le y x)
-    : self.toPreorder ⊆ (self.add x y incmp).toPreorder := by
+    : self.toPreorder ⊆ self.add x y incmp := by
       simp only [Subset, subrel, LE.le]
       intro a b self_a_b
       constructor
@@ -1305,7 +1402,7 @@ section
       {self : P.Totalizer}
       {x : α}
       {elems : List α}
-    : self.toPreorder ⊆ (aux x self elems).toPreorder := by
+    : self.toPreorder ⊆ aux x self elems := by
       intro a b
       simp only [LE.le]
       intro self_a_b
@@ -1330,7 +1427,7 @@ section
       [_F : Finite α]
       {self : P.Totalizer}
       (x : α)
-    : self.toPreorder ⊆ (self.addFor x).toPreorder :=
+    : self.toPreorder ⊆ self.addFor x :=
       addFor.aux_subrel
 
     theorem Preorder.Totalizer.addFor.aux_post
@@ -1389,7 +1486,7 @@ section
       [F : Finite α]
       {self : P.Totalizer}
       {elems : List α}
-    : self.toPreorder ⊆ (aux self elems).toPreorder := by
+    : self.toPreorder ⊆ aux self elems := by
       intro a b
       simp only [LE.le]
       intro self_a_b
@@ -1411,7 +1508,7 @@ section
     theorem Preorder.Totalizer.addMissing_subrel
       [_F : Finite α]
       {self : P.Totalizer}
-    : self.toPreorder ⊆ self.addMissing.toPreorder :=
+    : self.toPreorder ⊆ self.addMissing :=
       addMissing.aux_subrel
 
     theorem Preorder.Totalizer.addMissing.aux_post
@@ -1445,4 +1542,146 @@ section
       apply addMissing.aux_post
       exact F.all_in_elems a
   end addMissing
+
+
+
+  section top_level
+    def Preorder.totalize
+      [F : Finite α]
+      (P : Preorder α)
+    : Order α :=
+      let totalizer :=
+        Totalizer.empty P
+      let totalized :=
+        totalizer.addMissing
+      
+      {
+        toPreorder := totalized.toPreorder,
+        le_total := by
+          intro a b
+          apply totalizer.addMissing_post
+      }
+    
+    theorem Preorder.totalize_subrel
+      [F : Finite α]
+      (P : Preorder α)
+    : P ⊆ P.totalize := by
+      apply subrel_trans (Totalizer.empty_subrel P)
+      apply Totalizer.addMissing_subrel
+
+
+
+    def Preorder.totalizeWith
+      [F : Finite α]
+      (P : Preorder α)
+      (C : P.Complement)
+    : Order α :=
+      let totalized :=
+        Totalizer.empty P
+        |>.addMissingCmpl C
+        |>.addMissing
+      {
+        toPreorder := totalized.toPreorder,
+        le_total := by
+          intro a b
+          simp [LE.le]
+          apply Totalizer.addMissing_post
+      }
+
+    theorem Preorder.totalizeWith_subrel
+      [F : Finite α]
+      (P : Preorder α)
+      (C : P.Complement)
+    : P ⊆ P.totalizeWith C := by
+      apply subrel_trans $ (Totalizer.empty P).addMissingCmpl_subrel (C := C)
+      · exact Totalizer.addMissing_subrel
+      · exact Totalizer.empty_Sane P C
+    
+    theorem Preorder.totalizeWith_subrelCmpl
+      [F : Finite α]
+      (P : Preorder α)
+      (C : P.Complement)
+    : C.extended ⊆ P.totalizeWith C := by
+      let h : C.extended ⊆ (Totalizer.empty P).addMissingCmpl C := by
+        apply Totalizer.addMissingCmpl_cmpl_subrel
+        exact Totalizer.empty_Sane P C
+      apply subrel_trans h
+      apply Totalizer.addMissing_subrel
+  end top_level
 end
+
+
+
+theorem lemma_1_f
+  [Finite α]
+:
+  ∀ (P : Preorder α),
+    ∃ (O : Order α), P ⊆ O
+:= by
+  intro P
+  exists P.totalize
+  apply P.totalize_subrel
+
+
+
+theorem lemma_1_g
+  [Finite α]
+:
+  ∀ (P : Preorder α) (C : P.Complement),
+    ∃ (O : Order α), P ⊆ O ∧ C.extended ⊆ O
+:= by
+  intro P C
+  exists P.totalizeWith C
+  constructor
+  · apply P.totalizeWith_subrel
+  · apply P.totalizeWith_subrelCmpl
+
+
+
+/-- Compatibility of a preorder with another preorder, noted `P₁ ≈ P₂`. -/
+abbrev Preorder.compatible (P₁ P₂ : Preorder α) : Prop :=
+  ∃ (O : Order α), P₁ ⊆ O ∧ P₂ ⊆ O
+
+instance : HasEquiv (Preorder α) where
+  Equiv := Preorder.compatible
+
+
+
+theorem lemma_1_h
+  [Finite α]
+: ∀ (P₁ P₂ : Preorder α), P₁ ⊆ P₂ → P₁ ≈ P₂ := by
+  intro P₁ P₂ P₁_P₂
+  let O := P₂.totalize
+  let P₂_O := P₂.totalize_subrel
+  exists O
+  constructor
+  · apply Preorder.subrel_trans P₁_P₂ P₂_O
+  · exact P₂_O
+
+
+theorem lemma_1_i
+  [Finite α]
+  (P : Preorder α)
+  {S : Set α}
+  [∀ a, Decidable (a ∈ S)]
+:
+  (∀ x y, x ∈ S → y ∈ S → (P.le x y ↔ x = y))
+  → (P' : Preorder S)
+  → P ≈ P'.extended
+:= by
+  intro incmp P'
+  let O' := P'.totalize
+  let C' :=
+    Preorder.Complement.mk S inferInstance incmp O'
+  let O := P.totalizeWith C'
+  exists O
+  constructor
+  · apply P.totalizeWith_subrel
+  · let P'_O' : P' ⊆ O' :=
+      P'.totalize_subrel
+    let P_O : P ⊆ O :=
+      P.totalizeWith_subrel C'
+    let C'_O : C'.extended ⊆ O :=
+      P.totalizeWith_subrelCmpl C'
+    apply Preorder.subrel_trans _ C'_O
+    sorry

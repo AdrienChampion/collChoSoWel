@@ -82,9 +82,13 @@ section
 
   class Order (α : Type u) extends Preorder α where
     le_total : Total le
+  instance : Coe (Order α) (Preorder α) where
+    coe O := O.toPreorder
 
   class PartialOrder (α : Type u) extends Preorder α where
     le_antisymm : Antisymm le
+  instance : Coe (PartialOrder α) (Preorder α) where
+    coe PO := PO.toPreorder
 
   instance [R : PartialOrder α] : _root_.PartialOrder α where
     toPreorder := instRootPreorderOfPreorder

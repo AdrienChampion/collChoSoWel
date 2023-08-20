@@ -17,6 +17,7 @@ section
   Implies `_root_.Finite`. -/
   class Finite (α : Type u) where
     elems : List α
+    elems_nodup : elems.Nodup
     toℕ : α → Fin elems.length
     sanity_α : ∀ (a : α), elems.get (toℕ a) = a
     sanity_fin : ∀ (idx : Fin elems.length), toℕ (elems.get idx) = idx
@@ -100,6 +101,296 @@ section
       let h := h a
       h (F.all_in_elems a)
   ⟩
+
+  protected def Finite.subElems
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+  : List S :=
+    aux F.elems
+  where aux : List α → List S
+    | [] => []
+    | hd::tl =>
+      let sub := aux tl
+      if h : hd ∈ S then ⟨hd, h⟩ :: sub else sub
+
+  protected def Finite.subElems.aux_all_in_subElems
+    -- I think we could drop this, but too tired right now
+    [DecidableEq α]
+    [_F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    (l : List α)
+  : ∀ (a : S), a.1 ∈ l ↔ a ∈ Finite.subElems.aux S l := by
+    induction l with
+    | nil =>
+      simp [aux]
+    | cons hd tl ih =>
+      simp [aux]
+      intro a b
+      split
+      case inl hd_in_S =>
+        if a_eq_hd : a = hd then
+          simp [a_eq_hd]
+        else
+          simp [a_eq_hd]
+          apply ih ⟨a, b⟩
+      case inr _ =>
+        if a_eq_hd : a = hd then
+          rw [a_eq_hd] at b
+          contradiction
+        else
+          simp [a_eq_hd]
+          apply ih ⟨a, b⟩
+  protected def Finite.all_in_subElems
+    [DecidableEq α]
+    [F : Finite α]
+    {S : Set α}
+    [∀ a, Decidable (a ∈ S)]
+  : ∀ (a : S), a ∈ F.subElems S := by
+    intro a
+    let h :=
+      Finite.subElems.aux_all_in_subElems S F.elems a
+    simp [F.all_in_elems] at h
+    exact h
+
+  protected def Finite.subElems.aux_nodup
+    [_F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    (l : List α)
+    (l_nodup : l.Nodup)
+  : Finite.subElems.aux S l |>.Nodup := by
+    induction l with
+    | nil =>
+      simp [aux]
+    | cons hd tl ih =>
+      simp [aux]
+      split
+      case inl hd_in_S =>
+        apply List.Nodup.cons
+        · intro hd_in_aux_tl
+          let hd_in_tl := subElems.aux_all_in_subElems S tl ⟨hd, hd_in_S⟩
+          let hd_in_tl := hd_in_tl.mpr hd_in_aux_tl
+          simp [Coe.coe] at hd_in_tl
+          apply List.not_nodup_cons_of_mem hd_in_tl
+          exact l_nodup
+        · apply ih
+          cases l_nodup
+          assumption
+      case inr hd_notin_S =>
+        apply ih
+        cases l_nodup
+        assumption
+  protected def Finite.subElems_nodup
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+  : F.subElems S |>.Nodup :=
+    Finite.subElems.aux_nodup S F.elems F.elems_nodup
+
+  protected def Finite.subToℕ'
+    [DecidableEq α]
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    (a : S)
+  : Nat :=
+    aux (F.subElems S) 0 (F.all_in_subElems a)
+  where
+    aux
+      (l : List S) (idx : Nat)
+      (a_in_l : a ∈ l)
+    : Nat :=
+      match l with
+      | [] => by
+        contradiction
+      | hd :: tl =>
+        if a_eq_hd : a = hd then
+          idx
+        else
+          aux tl (idx + 1) (by cases a_in_l ; contradiction ; assumption)
+
+  protected def Finite.subToℕ'.aux_succ
+    [DecidableEq α]
+    [_F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    {l : List S}
+  :
+    ∀ (a : S),
+      (a_in_l : a ∈ l)
+      → (idx : Nat)
+      → Finite.subToℕ'.aux S a l idx.succ a_in_l = (Finite.subToℕ'.aux S a l idx a_in_l).succ
+  := by
+    intro a a_in_l
+    induction l with
+    | nil =>
+      contradiction
+    | cons hd tl ih =>
+      intro idx
+      simp [aux]
+      split
+      case inl a_eq_hd =>
+        rfl
+      case inr a_ne_hd =>
+        apply ih
+
+  protected def Finite.subToℕ'.aux_fin
+    [DecidableEq α]
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    {l : List S}
+  :
+    ∀ (a : S),
+      (a_in_l : a ∈ l)
+      → Finite.subToℕ'.aux S a l 0 a_in_l < l.length
+  := by
+    intro a a_in_l
+    induction l with
+    | nil =>
+      contradiction
+    | cons hd tl ih =>
+      simp [aux]
+      split
+      case inl a_eq_hd =>
+        exact Nat.zero_lt_succ _
+      case inr a_ne_hd =>
+        cases a_in_l with
+        | head => contradiction
+        | tail _ a_in_tl =>
+          rw [Finite.subToℕ'.aux_succ]
+          apply Nat.succ_lt_succ_iff.mpr
+          apply ih
+
+  protected def Finite.subToℕ'.aux_sanity_α
+    [DecidableEq α]
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    {l : List S}
+    (a : S)
+    (a_in_l : a ∈ l)
+  : l.get ⟨(Finite.subToℕ'.aux S a l 0 a_in_l), Finite.subToℕ'.aux_fin S a a_in_l⟩ = a := by
+    induction l with
+    | nil =>
+      contradiction
+    | cons hd tl ih =>
+      simp [aux]
+      split
+      case inl a_eq_hd =>
+        simp [a_eq_hd]
+      case inr a_ne_hd =>
+        cases a_in_l ; contradiction
+        case tail a_in_tl =>
+          unfold List.get
+          simp [Finite.subToℕ'.aux_succ]
+          apply ih
+
+  protected def Finite.subToℕ'.aux_sanity_fin
+    {α : Type u}
+    [DecidableEq α]
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    {l : List S}
+    (l_nodup : l.Nodup)
+    (idx : Fin l.length)
+  :
+    (
+      Finite.subToℕ'.aux
+        S (l.get idx) l 0
+        (by exact List.mem_iff_get.mpr ⟨idx, rfl⟩)
+    ) = idx
+  := by
+    induction l with
+    | nil =>
+      let _ := idx.2
+      contradiction
+    | cons hd tl ih =>
+      let ⟨idx, h_idx⟩ := idx
+      simp [aux]
+      split
+      case inl a_eq_hd =>
+        cases idx with
+        | zero => rfl
+        | succ idxSub =>
+          exfalso
+          unfold List.get at a_eq_hd
+          cases l_nodup with | cons nodup_hd tl_nodup =>
+          let get_tl_in_tl :=
+            List.get_mem tl idxSub (by apply Nat.lt_of_succ_lt_succ ; exact h_idx)
+          
+          apply nodup_hd _ get_tl_in_tl
+          rw [a_eq_hd]
+      case inr a_ne_hd =>
+        cases l_nodup with | cons nodup_hd tl_nodup =>
+        let ih := ih tl_nodup
+        simp [Finite.subToℕ'.aux_succ]
+        cases idx with
+        | zero =>
+          exfalso
+          apply a_ne_hd
+          simp [List.get]
+        | succ subIdx =>
+          simp
+          apply ih
+
+  protected def Finite.subToℕ
+    [DecidableEq α]
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+    (a : S)
+  : Fin (F.subElems S).length :=
+    let n := Finite.subToℕ' S a
+    let a_in_subElems := Finite.all_in_subElems a
+    let h := Finite.subToℕ'.aux_fin S a a_in_subElems
+    ⟨n, h⟩
+  
+  protected def Finite.subToℕ_sanity_α
+    [DecidableEq α]
+    [F : Finite α]
+    {S : Set α}
+    [∀ a, Decidable (a ∈ S)]
+    (a : S)
+  : (F.subElems S).get (Finite.subToℕ S a) = a := by
+    simp [Finite.subToℕ]
+    apply Finite.subToℕ'.aux_sanity_α
+  
+  protected def Finite.subToℕ_sanity_fin
+    [DecidableEq α]
+    [F : Finite α]
+    {S : Set α}
+    [∀ a, Decidable (a ∈ S)]
+    (idx : Fin (F.subElems S).length)
+  : F.subToℕ S ((F.subElems S).get idx) = idx := by
+    simp only [Finite.subToℕ, Finite.subToℕ']
+    ext
+    simp
+    apply Finite.subToℕ'.aux_sanity_fin
+    apply F.subElems_nodup
+
+  def Finite.finiteSet
+    [DecidableEq α]
+    [F : Finite α]
+    (S : Set α)
+    [∀ a, Decidable (a ∈ S)]
+  : Finite S where
+    elems := F.subElems S
+    elems_nodup := Finite.subElems_nodup S
+    toℕ := Finite.subToℕ S
+    sanity_α := Finite.subToℕ_sanity_α
+    sanity_fin := Finite.subToℕ_sanity_fin
+
+  instance
+    [DecidableEq α]
+    [F : Finite α]
+    {S : Set α}
+    [∀ a, Decidable (a ∈ S)]
+  : Finite S :=
+    F.finiteSet S
 end
 
 
