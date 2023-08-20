@@ -246,7 +246,7 @@ section
     [decMemS : ∀ a, Decidable (a ∈ S)]
     [decEq : DecidableEq α]
     {P : Preorder S}
-  : ∀ {a b},
+  : ∀ (a b),
     P.extended.le a b ↔ (
       if h : a ∈ S ∧ b ∈ S
       then P.le ⟨a, h.left⟩ ⟨b, h.right⟩
@@ -259,6 +259,50 @@ section
     case inr h =>
       simp only [not_and_or] at h
       apply P.extended_post_not_S h
+
+  theorem Preorder.extended_subrel
+    {S : Set α}
+    [∀ a, Decidable (a ∈ S)]
+    [DecidableEq α]
+  : ∀ (P₁ P₂ : Preorder S), P₁ ⊆ P₂ → P₁.extended ⊆ P₂.extended := by
+    intro P₁ P₂ P₁_sub_P₂ a b P₁_a_b
+    constructor
+    · let h_P₁ := P₁.extended_post a b
+      let h_P₂ := P₂.extended_post a b
+      simp [P₁_a_b] at h_P₁
+      rw [h_P₂]
+      split
+      case inl h =>
+        simp [LE.le, h] at h_P₁ h_P₂ P₁_a_b
+        apply P₁_sub_P₂ ⟨a, h.left⟩ ⟨b, h.right⟩ h_P₁ |>.left
+      case inr h =>
+        simp [h] at h_P₁
+        assumption
+    · let h_P₁ := P₁.extended_post b a
+      let h_P₂ := P₂.extended_post b a
+      rw [h_P₁, h_P₂]
+      split
+      case inl dom =>
+        simp [LE.le, dom] at h_P₁ h_P₂
+        split at h_P₁
+        case inl h_eq =>
+          simp [h_eq]
+          intro h _
+          apply h
+          apply P₁.le_refl'
+          ext
+          simp [Coe.coe]
+        case inr not_b_eq_a =>
+          simp [LE.le, dom] at P₁_a_b
+          split at P₁_a_b
+          case inl h =>
+            rw [h] at not_b_eq_a
+            contradiction
+          · apply P₁_sub_P₂ ⟨a, dom.right⟩ ⟨b, dom.left⟩ P₁_a_b |>.right
+      case inr h =>
+        intro
+        assumption
+
 
 
 
@@ -1659,6 +1703,7 @@ theorem lemma_1_h
   · exact P₂_O
 
 
+
 theorem lemma_1_i
   [Finite α]
   (P : Preorder α)
@@ -1677,11 +1722,8 @@ theorem lemma_1_i
   exists O
   constructor
   · apply P.totalizeWith_subrel
-  · let P'_O' : P' ⊆ O' :=
-      P'.totalize_subrel
-    let P_O : P ⊆ O :=
-      P.totalizeWith_subrel C'
-    let C'_O : C'.extended ⊆ O :=
+  · let C'_O : C'.extended ⊆ O :=
       P.totalizeWith_subrelCmpl C'
     apply Preorder.subrel_trans _ C'_O
-    sorry
+    apply Preorder.extended_subrel
+    apply P'.totalize_subrel

@@ -69,6 +69,11 @@ section
   class Preorder (α : Type u) extends ProtoOrder α where
     le_refl : Reflexive le
     le_trans : Transitive le
+  
+  def Preorder.le_refl' (P : Preorder α) : ∀ {a b}, a = b → P.le a b := by
+    intro a b h
+    rw [h]
+    exact P.le_refl b
 
   abbrev Preorder.le_trans' [P : Preorder α] : ∀ {a b c : α}, a ≤ b → b ≤ c → a ≤ c :=
     fun {a b c} => @Preorder.le_trans α P a b c
