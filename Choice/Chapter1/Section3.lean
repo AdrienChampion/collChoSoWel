@@ -43,17 +43,31 @@ section lemma_1_b
   Original formulation omits the necessary assumption `Inhabited α`. -/
   theorem lemma_1_b
     (α : Type u)
-    [R : Preorder α]
-    [_F : Finite α]
-    [_I : Inhabited α]
-  : ∃ max, max ∈ R.M :=
-    ⟨R.getMax, R.getMax_in_M rfl⟩
+    [Finite α] [Inhabited α]
+    [P : Preorder α]
+  : ∃ max, max ∈ P.M :=
+    ⟨P.getMax, P.getMax_in_M rfl⟩
 
   abbrev Preorder.lemma_1_b
-    [Preorder α]
-    [Finite α]
-    [Inhabited α]
-  := Choice.lemma_1_b α
+    [Finite α] [Inhabited α]
+    (_P : Preorder α)
+  :=
+    Choice.lemma_1_b α
+
+  abbrev Preorder.existsMax :=
+    @Preorder.lemma_1_b
+  
+  abbrev Order.existsMax
+    [Finite α] [Inhabited α]
+    (O : Order α)
+  :=
+    O.toPreorder |>.existsMax
+
+  def Order.getMax'
+    [Finite α] [Inhabited α]
+    (O : Order α)
+  : O.M :=
+    ⟨O.getMax, O.getMax_in_M rfl⟩
 end lemma_1_b
 
 
@@ -191,4 +205,44 @@ section lemma_1_e
     [R : Preorder α] [Finite α] [Inhabited α]
   : (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) ↔ (R.C = R.M) :=
     ⟨lemma_1_e_mp, lemma_1_e_mpr⟩
+  
+  section order
+    variable
+      (O : Order α)
+      [Inhabited α]
+      [F : Finite α]
+
+    theorem Order.equiv_max : ∀ a b, a ∈ O.M → b ∈ O.M → a ≈ b := by
+      intro a b max_a max_b
+      simp [O.equiv_def]
+      simp [Membership.mem, Set.Mem, O.lt_def] at max_a max_b
+      let ha := max_a b
+      let hb := max_b a
+      if ab : a ≤ b then
+        exact And.intro ab (hb ab)
+      else if ba : b ≤ a then
+        exact And.intro (ha ba) ba
+      else
+        cases O.le_total a b
+        <;> contradiction
+
+    theorem Order.C_eq_M : O.C = O.M :=
+      lemma_1_e.mp O.equiv_max
+    
+    theorem Order.best_iff_max : ∀ {a}, a ∈ O.C ↔ a ∈ O.M := by
+      rw [C_eq_M]
+
+    def Order.bestOfMax : O.M → O.C :=
+      fun max => O.C_eq_M ▸ max
+    def Order.maxOfBest : O.C → O.M :=
+      fun best => O.C_eq_M ▸ best
+
+    def Order.getBest' : O.C :=
+      let ⟨max, max_in_M⟩ := O.getMax'
+      ⟨max, O.C_eq_M ▸ max_in_M⟩
+    def Order.getBest : α :=
+      O.getBest'.1
+    theorem Order.getBest_in_C : O.getBest ∈ O.C :=
+      O.getBest'.2
+  end order
 end lemma_1_e
