@@ -673,3 +673,37 @@ section
   def Preorder.maxOf (a : α) : α :=
     if h : a ∈ R.M then a else getMaxCex a h
 end
+
+
+
+section sub
+  abbrev Preorder.sub (P : Preorder α) (S : Set α) : Preorder S where
+    le a b := P.le a.1 b.1
+    lt a b := P.le a.1 b.1 ∧ ¬ P.le b.1 a.1
+    Equiv a b := P.le a.1 b.1 ∧ P.le b.1 a.1
+    lt_def := by
+      simp [LT.lt]
+    equiv_def := by
+      simp [HasEquiv.Equiv]
+
+    decidableRel _ _ := by
+      simp [DecidableRel, LE.le]
+      apply P.decidableRel
+    decidableEq _a _b := by
+      rw [Subtype.mk_eq_mk]
+      apply P.decidableEq
+    le_refl _ := by simp
+    le_trans _ _ _ :=
+      by
+        unfold LE.le
+        simp
+        apply P.le_trans
+
+
+
+  abbrev Order.sub (O : Order α) (S : Set α) : Order S where
+    toPreorder :=
+      O.toPreorder.sub S
+    le_total a b :=
+      O.le_total a.1 b.1
+end sub
