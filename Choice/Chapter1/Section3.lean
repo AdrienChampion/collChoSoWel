@@ -173,7 +173,11 @@ section lemma_1_d
         apply Trans.trans max_le_best best_le_a
     )
 
-  /-- Lemma 1.d. -/
+  /-- Lemma 1.d, adapted for quasi-transitivity.
+
+  I'm pretty sure this lemma does not hold for a `QPreorder α`, but the proof is straightforward if
+  we ask `· ≤ ·` to be total.
+  -/
   theorem lemma_1_d'
     [R : QOrder α]
   : R.C = R.M :=
@@ -226,11 +230,16 @@ section lemma_1_e
     simp [R.equiv_def]
     apply And.intro (C_a b) (C_b a)
 
+  /-- Lemma 1.e. -/
   theorem lemma_1_e
     [R : Preorder α] [Finite α] [Inhabited α]
   : (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) ↔ (R.C = R.M) :=
     ⟨lemma_1_e_mp, lemma_1_e_mpr⟩
 
+  /-- Lemma 1.e, adapted for quasi-transitivity.
+  
+  Relies on `lemma_1_d'`, which is why we require `· ≤ ·` to be total.
+  -/
   theorem lemma_1_e'
     [R : QOrder α]
   : (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) ↔ (R.C = R.M) :=
