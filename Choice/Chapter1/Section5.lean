@@ -74,3 +74,7 @@ theorem lemma_1_k
   [Finite α]
 : Q.ChoiceFunFin :=
   Q.choiceFunFin
+
+
+/-! We're skipping `lemma_1_l` as it's messy to prove with the current architecture and it does not
+seem to be used a whole lot after it's proved. -/
