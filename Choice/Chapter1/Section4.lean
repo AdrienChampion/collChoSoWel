@@ -139,6 +139,7 @@ section
       case inr.inr sub_ab sub_bc =>
         exact ih legit_sub sub_ab sub_bc |> Or.inr
     
+  /-- TODO: optimize the proofs in here it's terrible -/
   abbrev Preorder.extended
     {S : Set α}
     [decMemS : ∀ a, Decidable (a ∈ S)]
@@ -163,8 +164,8 @@ section
       le,
       lt,
       Equiv,
-      decidableRel := fun a b => by
-        let _ := P.decidableEq
+      toDecidableRel := fun a b => by
+        let _ := P.toDecidableEq
         simp [LE.le]
         if a_eq_b : a = b then
           simp [a_eq_b]
@@ -172,7 +173,7 @@ section
         else if a_in_S : a ∈ S then
           if b_in_S : b ∈ S then
             simp [a_eq_b, a_in_S, b_in_S]
-            apply P.decidableRel
+            apply P.toDecidableRel
           else
             simp [a_eq_b, a_in_S, b_in_S]
             apply isFalse
@@ -181,29 +182,29 @@ section
           simp [a_eq_b, a_in_S]
           apply isFalse
           trivial
-      decidableEq :=
+      toDecidableEq :=
         decEq,
-      lt_def := by
+      lt_def' := fun _ _ => by
         rfl
-      equiv_def := by
+      equiv_def' := fun _ _ => by
         rfl
-      le_refl := fun a => by
+      le_refl' := fun a => by
         simp [LE.le]
-      le_trans := by
+      le_trans' := by
         intro a b c
         simp [LE.le]
-        split <;> simp [*]
-        · split <;> simp [*] 
-          split <;> simp [*]
-          split <;> simp [*]
-          split <;> simp [*]
-          split <;> simp [*]
+        split <;> try simp [*]
+        · split <;> try simp [*]
+          split <;> try simp [*]
+          split <;> try simp [*]
+          split <;> try simp [*]
+          split <;> try simp [*]
           · rename b = c => b_eq_c
             rename ¬ c ∈ S => c_in_Incmp
             rw [← b_eq_c] at c_in_Incmp
             contradiction
-          · split <;> simp [*]
-            split <;> simp [*]
+          · split <;> try simp [*]
+            split <;> try simp [*]
             exact fun h h' => P.le_trans h h'
     : Preorder α}
 
@@ -219,7 +220,6 @@ section
     split <;> simp [LE.le]
     case inl h =>
     rw [Subtype.ext h]
-    simp
     apply P.le_refl
 
   theorem Preorder.extended_post_not_S
@@ -236,10 +236,11 @@ section
     <;> (simp [LE.le] ; simp [*] ; constructor)
     <;> (try intro ; simp [*])
     <;> (
-      apply Decidable.byContradiction
       intro h
-      simp [h] at *
+      split at h
+      <;> try assumption
     )
+    <;> contradiction
 
   theorem Preorder.extended_post
     {S : Set α}
@@ -290,8 +291,6 @@ section
           intro h _
           apply h
           apply P₁.le_refl'
-          ext
-          simp [Coe.coe]
         case inr not_b_eq_a =>
           simp [LE.le, dom] at P₁_a_b
           split at P₁_a_b
@@ -323,14 +322,14 @@ section
     abbrev Preorder.Complement.le :=
       self.Ord.le
     @[simp]
-    abbrev Preorder.Complement.le_refl :=
-      self.Ord.le_refl
-    abbrev Preorder.Complement.le_refl' (h : a = b) : self.le a b := by
+    abbrev Preorder.Complement.le_refl' :=
+      self.Ord.le_refl'
+    abbrev Preorder.Complement.le_refl (h : a = b) : self.le a b := by
       rw [h]
-      exact self.le_refl b
+      exact self.le_refl' b
     @[simp]
-    abbrev Preorder.Complement.le_trans :=
-      self.Ord.le_trans
+    abbrev Preorder.Complement.le_trans' :=
+      self.Ord.le_trans'
 
     @[simp]
     abbrev Preorder.Complement.inIncmp : Type u := {x // x ∈ self.Incmp}
@@ -377,8 +376,7 @@ section
       split <;> simp [LE.le]
       case inl h =>
       rw [Subtype.ext h]
-      simp
-      apply self.le_refl
+      apply self.le_refl'
 
     theorem Preorder.Complement.extended_post_not_incmp
       [P : Preorder α]
@@ -392,10 +390,11 @@ section
       <;> (simp [LE.le] ; simp [*] ; constructor)
       <;> (try intro ; simp [*])
       <;> (
-        apply Decidable.byContradiction
         intro h
-        simp [h] at *
+        split at h
+        <;> try assumption
       )
+      <;> contradiction
 
     theorem Preorder.Complement.extended_post
       [P : Preorder α]
@@ -497,14 +496,14 @@ section
       toLE := t.instLETotalizer
       toLT := t.instLTTotalizer
       toHasEquiv := t.instHasEquivTotalizer
-      le_refl _ := t.le_refl
-      le_trans _ _ _ h h' := t.le_trans h h'
-      lt_def := by
+      le_refl' _ := t.le_refl
+      le_trans' _ _ _ h h' := t.le_trans h h'
+      lt_def' := by
         simp [LT.lt, LE.le]
-      equiv_def := by
+      equiv_def' := by
         simp [HasEquiv.Equiv, LE.le]
-      decidableRel := t.instDecLETotalizer
-      decidableEq := inferInstance
+      toDecidableRel := t.instDecLETotalizer
+      toDecidableEq := inferInstance
 
     instance [P : Preorder α] : Coe P.Totalizer (Preorder α) where
       coe T := T.toPreorder
@@ -528,7 +527,7 @@ section
       · simp [Complement.semiSubrel, LE.le]
         intro a a_in_Incmp b b_in_Incmp P_a_b
         let h := C.isIncmp a b a_in_Incmp b_in_Incmp |>.mp P_a_b
-        apply C.le_refl'
+        apply C.le_refl
         apply Subtype.eq
         simp [h]
       · simp [Complement.semiSubrel', LE.le]
@@ -536,7 +535,7 @@ section
         let h := C.isIncmp a b a_in_Incmp b_in_Incmp |>.mp P_a_b
         exfalso
         apply not_C_b_a
-        apply C.le_refl'
+        apply C.le_refl
         apply Subtype.eq
         simp [h]
       · simp [dualSanity₁, LE.le]
@@ -600,7 +599,6 @@ section
         · intro b_in_res
           cases b_in_res ; exact List.Mem.head tl
           case tail b_in_sub =>
-          simp [not_and_or] at h
           apply List.Mem.tail
           apply ih _ b_in_sub
         · intro b_in_res
@@ -827,8 +825,8 @@ section
       intro h
       cases h with
       | inl h =>
-        apply C.le_trans (ssr _ _ h.left)
-        apply C.le_trans cmpl_x_y
+        apply C.le_trans' (ssr _ _ h.left)
+        apply C.le_trans' cmpl_x_y
         exact ssr _ _ h.right
       | inr h =>
         exact ssr _ _ h
@@ -854,8 +852,8 @@ section
         apply not_b_a
         let b_x := ssr _ _ self_b_x
         let y_a := ssr _ _ self_y_a
-        apply C.le_trans b_x
-        apply C.le_trans x_y y_a
+        apply C.le_trans' b_x
+        apply C.le_trans' x_y y_a
       | inr self_b_a =>
         apply not_b_a
         apply ssr _ _ self_b_a

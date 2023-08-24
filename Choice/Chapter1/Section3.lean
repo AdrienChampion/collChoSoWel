@@ -44,30 +44,36 @@ section lemma_1_b
   theorem lemma_1_b
     (α : Type u)
     [Finite α] [Inhabited α]
-    [P : Preorder α]
+    [P : QPreorder α]
   : ∃ max, max ∈ P.M :=
-    ⟨P.getMax, P.getMax_in_M rfl⟩
+    ⟨getMax P, getMax_in_M _⟩
 
-  abbrev Preorder.lemma_1_b
+  abbrev QPreorder.lemma_1_b
     [Finite α] [Inhabited α]
-    (_P : Preorder α)
+    (_P : QPreorder α)
   :=
     Choice.lemma_1_b α
 
-  abbrev Preorder.existsMax :=
-    @Preorder.lemma_1_b
+  abbrev QPreorder.existsMax :=
+    @QPreorder.lemma_1_b
   
-  abbrev Order.existsMax
+  abbrev QOrder.existsMax
     [Finite α] [Inhabited α]
-    (O : Order α)
+    (O : QOrder α)
   :=
-    O.toPreorder |>.existsMax
+    O.toQPreorder |>.existsMax
 
   def Order.getMax'
     [Finite α] [Inhabited α]
     (O : Order α)
   : O.M :=
-    ⟨O.getMax, O.getMax_in_M rfl⟩
+    ⟨getMax O, getMax_in_M _⟩
+
+  def QOrder.getMax'
+    [Finite α] [Inhabited α]
+    (O : QOrder α)
+  : O.M :=
+    ⟨getMax O, getMax_in_M _⟩
 end lemma_1_b
 
 
@@ -155,7 +161,7 @@ section lemma_1_d
     {best : α}
     (C_best : best ∈ R.C)
   : R.C = R.M :=
-    Set.eq_of_subset_of_subset R.best_is_max (
+    Set.eq_of_subset_of_subset R.C_sub_M (
       by
         intro max M_max a
         let best_le_a := C_best a
@@ -166,6 +172,25 @@ section lemma_1_d
         let max_le_best := tmp best_le_max
         apply Trans.trans max_le_best best_le_a
     )
+
+  /-- Lemma 1.d. -/
+  theorem lemma_1_d'
+    [R : QOrder α]
+  : R.C = R.M :=
+    Set.eq_of_subset_of_subset R.C_sub_M (
+      by
+        intro max M_max a
+        apply Decidable.byContradiction
+        intro not_max_le_a
+        simp [R.M_def] at M_max
+        let not_a_lt_max := M_max a
+        simp [R.lt_def] at not_a_lt_max
+        if not_a_le_max : a ≤ max then
+          exact not_max_le_a (not_a_lt_max not_a_le_max)
+        else
+          cases R.le_total a max
+          <;> contradiction
+    )
 end lemma_1_d
 
 
@@ -175,7 +200,7 @@ section lemma_1_e
     [R : Preorder α] [F : Finite α] [I : Inhabited α]
   : (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) → (R.C = R.M) := by
     intro h
-    let ⟨max, M_max⟩ := R.lemma_1_b
+    let ⟨max, M_max⟩ := R.toQPreorder.lemma_1_b
     let h_max b := h max b M_max
     apply lemma_1_d (best := max)
     intro a
@@ -186,14 +211,14 @@ section lemma_1_e
       exact max_eqv_a.left
     else
       let ⟨maxₐ, maxₐ_lt_a, M_maxₐ⟩ :=
-        R.max_of_not_max a h_a_max
+        R.toQPreorder.max_of_not_max a h_a_max
       let maxₐ_eqv_a := h_max maxₐ M_maxₐ
       simp only [R.equiv_def] at maxₐ_eqv_a
       simp only [R.lt_def] at maxₐ_lt_a
       apply Trans.trans maxₐ_eqv_a.left maxₐ_lt_a.left
 
   theorem lemma_1_e_mpr
-    [R : Preorder α] [_F : Finite α] [_I : Inhabited α]
+    [R : ProtoOrder α]
   : (R.C = R.M) → (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) := by
     intro h a b M_a M_b
     let C_a : a ∈ R.C := by rw [h] ; assumption
@@ -205,7 +230,12 @@ section lemma_1_e
     [R : Preorder α] [Finite α] [Inhabited α]
   : (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) ↔ (R.C = R.M) :=
     ⟨lemma_1_e_mp, lemma_1_e_mpr⟩
-  
+
+  theorem lemma_1_e'
+    [R : QOrder α]
+  : (∀ (a b : α), a ∈ R.M → b ∈ R.M → a ≈ b) ↔ (R.C = R.M) :=
+    ⟨by intros ; exact lemma_1_d', lemma_1_e_mpr⟩
+
   section order
     variable
       (O : Order α)
@@ -245,4 +275,42 @@ section lemma_1_e
     theorem Order.getBest_in_C : O.getBest ∈ O.C :=
       O.getBest'.2
   end order
+
+  section qorder
+    variable
+      (Q : QOrder α)
+
+    theorem QOrder.equiv_max : ∀ a b, a ∈ Q.M → b ∈ Q.M → a ≈ b := by
+      intro a b max_a max_b
+      simp [Q.equiv_def]
+      simp [Membership.mem, Set.Mem, Q.lt_def] at max_a max_b
+      let ha := max_a b
+      let hb := max_b a
+      if ab : a ≤ b then
+        exact And.intro ab (hb ab)
+      else if ba : b ≤ a then
+        exact And.intro (ha ba) ba
+      else
+        cases Q.le_total a b
+        <;> contradiction
+
+    theorem QOrder.C_eq_M : Q.C = Q.M :=
+      lemma_1_d'
+    
+    theorem QOrder.best_iff_max : ∀ {a}, a ∈ Q.C ↔ a ∈ Q.M := by
+      rw [C_eq_M]
+
+    def QOrder.bestOfMax : Q.M → Q.C :=
+      fun max => Q.C_eq_M ▸ max
+    def QOrder.maxOfBest : Q.C → Q.M :=
+      fun best => Q.C_eq_M ▸ best
+
+    def QOrder.getBest' [Finite α] [Inhabited α] : Q.C :=
+      let ⟨max, max_in_M⟩ := Q.getMax'
+      ⟨max, Q.C_eq_M ▸ max_in_M⟩
+    def QOrder.getBest [Finite α] [Inhabited α] : α :=
+      Q.getBest'.1
+    theorem QOrder.getBest_in_C [Finite α] [Inhabited α] : Q.getBest ∈ Q.C :=
+      Q.getBest'.2
+  end qorder
 end lemma_1_e

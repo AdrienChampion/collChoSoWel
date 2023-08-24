@@ -10,7 +10,6 @@ namespace Choice
 section
   variable
     {α : Type u}
-    [R : Preorder α]
   
   /-- Custom (computable) notion of finiteness.
   
@@ -48,24 +47,23 @@ section
   instance [I : Finite α] : _root_.Finite α :=
     .intro I.bijℕ
 
-  def Finite.wellFoundedP
-    [Preorder α]
+  def QPreorder.wellFounded
+    [Finite α]
+    (Q : QPreorder α)
+  := Finite.wellFounded_of_trans_of_irrefl Q.lt
+
+  instance instWellFoundedLT_of_Finite_QPreorder
+    (Q : QPreorder α)
     [Finite α]
   : WellFoundedLT α :=
-    Finite.to_wellFoundedLT
-
-  instance instWellFounded_of_Finite_Preorder
-    [R : Preorder α]
-    [F : Finite α]
-  : IsWellFounded α R.lt :=
-    F.wellFoundedP
+    ⟨Q.wellFounded⟩
   
   instance
-    [R : Preorder α]
+    [Q : QPreorder α]
     [_F : Finite α]
   : WellFoundedRelation α where
-    rel := R.lt
-    wf := instWellFounded_of_Finite_Preorder.wf
+    rel := Q.lt
+    wf := Q.wellFounded
 
 
 
@@ -158,6 +156,7 @@ section
     [_F : Finite α]
     (S : Set α)
     [∀ a, Decidable (a ∈ S)]
+    [DecidableEq α]
     (l : List α)
     (l_nodup : l.Nodup)
   : Finite.subElems.aux S l |>.Nodup := by
@@ -184,6 +183,7 @@ section
         assumption
   protected def Finite.subElems_nodup
     [F : Finite α]
+    [DecidableEq α]
     (S : Set α)
     [∀ a, Decidable (a ∈ S)]
   : F.subElems S |>.Nodup :=
@@ -372,7 +372,7 @@ section
     apply Finite.subToℕ'.aux_sanity_fin
     apply F.subElems_nodup
 
-  def Finite.finiteSet
+  def Finite.sub
     [DecidableEq α]
     [F : Finite α]
     (S : Set α)
@@ -390,106 +390,119 @@ section
     {S : Set α}
     [∀ a, Decidable (a ∈ S)]
   : Finite S :=
-    F.finiteSet S
+    F.sub S
+end
+
+
+
+section
+  abbrev ProtoOrder.is_max (_ : ProtoOrder α) (a : α) : Prop :=
+    ¬ ∃ (b : α), b < a
+
+  abbrev ProtoOrder.is_best (_ : ProtoOrder α) (a : α) : Prop :=
+    ∀ (b : α), a ≤ b
+
+  variable
+    [F : Finite α]
+    (P : ProtoOrder α)
+
+
+
+  section max
+    abbrev ProtoOrder.M : Set α :=
+      P.is_max
+    
+    theorem ProtoOrder.M_def : a ∈ P.M ↔ ¬ ∃ (b : α), b < a := by
+      simp [Membership.mem, Set.Mem]
+
+    def ProtoOrder.isMax (_ : ProtoOrder α) (a : α) : Bool :=
+      F.elems.all (¬ · < a)
+    
+    theorem ProtoOrder.isMax_iff_in_M : P.isMax a ↔ a ∈ P.M := ⟨
+      by
+        simp [M_def, isMax]
+        intro isMax_a b
+        exact isMax_a b (F.all_in_elems b),
+      by
+        simp [M_def, isMax]
+        intro h b _
+        exact h b
+    ⟩
+
+    instance : Decidable (a ∈ P.M) :=
+      if h : P.isMax a then
+        P.isMax_iff_in_M.mp h
+        |> isTrue
+      else
+        P.isMax_iff_in_M.not.mp h
+        |> isFalse
+  end max
+
+
+
+  section best
+    abbrev ProtoOrder.C : Set α :=
+      P.is_best
+    
+    theorem ProtoOrder.C_def : a ∈ P.C ↔ ∀ (b : α), a ≤ b := by
+      simp [Membership.mem, Set.Mem]
+
+    def ProtoOrder.isBest (a : α) : Bool :=
+      F.elems.all (a ≤ ·)
+    
+    theorem ProtoOrder.isBest_iff_in_C : P.isBest a ↔ a ∈ P.C := ⟨
+      by
+        simp [isBest]
+        intro isBest_a b
+        exact isBest_a b (F.all_in_elems b),
+      by
+        simp [isBest]
+        intro h b _
+        exact h b
+    ⟩
+
+    instance : Decidable (a ∈ P.C) :=
+      if h : P.isBest a then
+        P.isBest_iff_in_C.mp h
+        |> isTrue
+      else
+        P.isBest_iff_in_C.not.mp h
+        |> isFalse
+  end best
+
+
+
+  theorem ProtoOrder.C_sub_M : P.C ⊆ P.M
+    | best, C_best, ⟨cex, b_lt_cex⟩ => by
+      rw [P.lt_def] at b_lt_cex
+      apply b_lt_cex.right (C_best cex)
+
+
+
+  section cex
+    theorem ProtoOrder.bestCex : a ∉ P.C → ∃ (b : α), ¬ a ≤ b := by
+      simp [C_def, is_best]
+      intro b h
+      exact ⟨b, h⟩
+    
+    theorem ProtoOrder.bestCexInv : (∃ (b : α), ¬ a ≤ b) → a ∉ P.C := by
+      simp [C_def]
+      intro b h
+      exact ⟨b, h⟩
+    
+    theorem ProtoOrder.not_best_iff_cex : a ∉ P.C ↔ ∃ (b : α), ¬ a ≤ b :=
+      ⟨P.bestCex, P.bestCexInv⟩
+  end cex
 end
 
 
 
 section
   variable
-    {α : Type u}
-    [R : Preorder α]
     [F : Finite α]
     [I : Inhabited α]
 
-
-
-  abbrev Preorder.is_max (a : α) : Prop :=
-    ¬ ∃ (b : α), b < a
-  abbrev Preorder.M : Set α :=
-    is_max
-  
-  theorem Preorder.M_def : a ∈ R.M ↔ ¬ ∃ (b : α), b < a := by
-    simp [Membership.mem, Set.Mem]
-
-  def Preorder.isMax (a : α) : Bool :=
-    F.elems.all (¬ · < a)
-  
-  theorem Preorder.isMax_iff_in_M : R.isMax a ↔ a ∈ R.M := ⟨
-    by
-      simp [M_def, isMax]
-      intro isMax_a b
-      exact isMax_a b (F.all_in_elems b),
-    by
-      simp [M_def, isMax]
-      intro h b _
-      exact h b
-  ⟩
-
-  instance : Decidable (a ∈ R.M) :=
-    if h : R.isMax a then
-      Preorder.isMax_iff_in_M.mp h
-      |> isTrue
-    else
-      Preorder.isMax_iff_in_M.not.mp h
-      |> isFalse
-
-
-
-
-  abbrev Preorder.is_best (a : α) : Prop :=
-    ∀ (b : α), a ≤ b
-  abbrev Preorder.C : Set α :=
-    is_best
-  
-  theorem Preorder.C_def : a ∈ R.C ↔ ∀ (b : α), a ≤ b := by
-    simp [Membership.mem, Set.Mem]
-
-  def Preorder.isBest (a : α) : Bool :=
-    F.elems.all (a ≤ ·)
-  
-  theorem Preorder.isBest_iff_in_C : isBest a ↔ a ∈ R.C := ⟨
-    by
-      simp [isBest]
-      intro isBest_a b
-      exact isBest_a b (F.all_in_elems b),
-    by
-      simp [isBest]
-      intro h b _
-      exact h b
-  ⟩
-
-  instance : Decidable (a ∈ R.C) :=
-    if h : R.isBest a then
-      Preorder.isBest_iff_in_C.mp h
-      |> isTrue
-    else
-      Preorder.isBest_iff_in_C.not.mp h
-      |> isFalse
-
-  theorem Preorder.bestCex : a ∉ C → ∃ (b : α), ¬ a ≤ b := by
-    simp [C_def, is_best]
-    intro b h
-    exact ⟨b, h⟩
-  
-  theorem Preorder.bestCexInv : (∃ (b : α), ¬ a ≤ b) → a ∉ C := by
-    simp [C_def]
-    intro b h
-    exact ⟨b, h⟩
-  
-  theorem Preorder.not_best_iff_cex : a ∉ C ↔ ∃ (b : α), ¬ a ≤ b :=
-    ⟨bestCex, bestCexInv⟩
-
-
-
-  theorem Preorder.best_is_max : R.C ⊆ R.M
-    | best, C_best, ⟨cex, b_lt_cex⟩ => by
-      rw [R.lt_def] at b_lt_cex
-      apply b_lt_cex.right (C_best cex)
-
-
-
-  def Preorder.getMax : α :=
+  def QPreorder.getMax (P : QPreorder α) : α :=
     aux F.elems F.elems_not_nil
   where
     aux (l : List α) (_ : l ≠ []) :=
@@ -499,9 +512,10 @@ section
         let sub := aux (b::tl) (by simp)
         if a < sub then a else sub
 
-  def Preorder.getMax.aux_legit
+  def QPreorder.getMax.aux_legit
+    (P : QPreorder α)
     {l : List α} {h_ne_nil : l ≠ []} {max : α}
-  : max = getMax.aux l h_ne_nil → ∀ b ∈ l, ¬ b < max :=
+  : max = getMax.aux P l h_ne_nil → ∀ b ∈ l, ¬ b < max :=
     match h : l with
     | [] => by contradiction
     | [a] => by
@@ -511,9 +525,9 @@ section
       apply irrefl
     | hd::hd'::tl => by
       simp [aux]
-      let sub := aux (hd'::tl) (List.cons_ne_nil hd' tl)
+      let sub := aux P (hd'::tl) (List.cons_ne_nil hd' tl)
       let ih :=
-        aux_legit
+        aux_legit P
           (l := hd'::tl)
           (h_ne_nil := List.cons_ne_nil hd' tl)
           (max := sub)
@@ -521,15 +535,21 @@ section
       if hd_lt_sub : hd < sub then
         simp [hd_lt_sub]
         intro h ; rw [h]
-        simp
-        apply And.intro
-        · intro absurd
-          apply ih hd' (List.mem_cons_self hd' tl)
-          apply Trans.trans absurd hd_lt_sub
+        apply And.intro _ (And.intro _ _)
+        · simp [P.lt_def]
+        · simp [P.lt_def]
+          intro hd'_hd
+          apply Decidable.byContradiction
+          intro not_hd_hd'
+          let hd'_lt_hd : hd' < hd := by
+            rw [P.lt_def]
+            apply And.intro hd'_hd not_hd_hd'
+          apply ih hd' (List.Mem.head _)
+          apply P.lt_trans hd'_lt_hd hd_lt_sub
         · intro a a_in_tl
           intro a_lt_hd
           apply ih a (List.Mem.tail hd' a_in_tl)
-          apply Trans.trans a_lt_hd hd_lt_sub
+          apply P.lt_trans a_lt_hd hd_lt_sub
       else
         simp [hd_lt_sub]
         intro max_def
@@ -539,39 +559,46 @@ section
         intro a a_in_tl
         apply ih a (List.Mem.tail hd' a_in_tl)
   
-  def Preorder.getMax_in_M
-    {max : α}
-  : max = R.getMax → max ∈ M := by
-    simp [getMax, M_def]
-    intro max_def
-    let h := getMax.aux_legit max_def
+  def QPreorder.getMax_in_M
+    (P : QPreorder α)
+  : P.getMax ∈ P.M := by
+    simp [getMax, P.M_def]
     intro a
-    apply h a (F.all_in_elems a)
+    apply getMax.aux_legit P rfl a (F.all_in_elems a)
+
+  export QPreorder (getMax getMax_in_M)
 
 
 
-  theorem Preorder.maxCex : a ∉ M → ∃ (b : α), b < a := by
-    simp [M_def]
+  theorem ProtoOrder.maxCex
+    (P : ProtoOrder α)
+  : a ∉ P.M → ∃ (b : α), b < a := by
+    simp [P.M_def]
     intro b h
     exact ⟨b, h⟩
   
-  theorem Preorder.maxCexInv : (∃ (b : α), b < a) → a ∉ M := by
-    simp [M_def]
+  theorem ProtoOrder.maxCexInv
+    (P : ProtoOrder α)
+  : (∃ (b : α), b < a) → a ∉ P.M := by
+    simp [P.M_def]
     intro b h
     exact ⟨b, h⟩
   
-  theorem Preorder.not_max_iff_cex : a ∉ M ↔ ∃ (b : α), b < a :=
-    ⟨maxCex, maxCexInv⟩
+  theorem ProtoOrder.not_max_iff_cex
+    (P : ProtoOrder α)
+  : a ∉ P.M ↔ ∃ (b : α), b < a :=
+    ⟨P.maxCex, P.maxCexInv⟩
 
-  def Preorder.getMaxCex
+  def ProtoOrder.getMaxCex
+    (P : ProtoOrder α)
     (a : α)
-    (not_M_a : a ∉ M)
+    (not_M_a : a ∉ P.M)
   : α :=
     match h : F.elems.find? fun b => b < a with
     | some cex => cex
     | none => by
       let tmp b := List.find?_eq_none.mp h b (F.all_in_elems b)
-      let M_a : a ∈ M := by
+      let M_a : a ∈ P.M := by
         intro b
         let ⟨b, b_lt_a⟩ := b
         let tmp := tmp b
@@ -579,21 +606,20 @@ section
         contradiction
       contradiction
     
-  theorem Preorder.getMaxCex_is_cex
-    {a cex : α}
-    {not_M_a : a ∉ M}
-  : cex = R.getMaxCex a not_M_a → cex < a := by
+  theorem ProtoOrder.getMaxCex_is_cex
+    (P : ProtoOrder α)
+    {a : α}
+    (not_M_a : a ∉ P.M)
+  : P.getMaxCex a not_M_a < a := by
     simp [getMaxCex]
     split
     case h_1 cex' h_cex' =>
       let h := List.find?_some h_cex'
-      intro cex_def
-      rw [cex_def]
       simp at h
       assumption
     case h_2 find?_none =>
       let tmp b := List.find?_eq_none.mp find?_none b (F.all_in_elems b)
-      let M_a : a ∈ M := by
+      let M_a : a ∈ P.M := by
         intro b
         let ⟨b, b_lt_a⟩ := b
         let tmp := tmp b
@@ -601,105 +627,126 @@ section
         contradiction
       contradiction
 
-  def Preorder.maxOfNotMax
-    [R : Preorder α]
+  def QPreorder.maxOfNotMax
+    [R : QPreorder α]
     [F : Finite α]
     (a : α)
-    (not_M_a : a ∉ M)
+    (not_M_a : a ∉ R.M)
   : α :=
-    let cex := getMaxCex a not_M_a
-    if h : cex ∈ M
+    let cex := R.getMaxCex a not_M_a
+    if h : cex ∈ R.M
     then cex
-    else
-      maxOfNotMax cex h
+    else maxOfNotMax cex h
   termination_by maxOfNotMax _ R F a h =>
     a
   decreasing_by {
     simp_wf
-    exact R.getMaxCex_is_cex rfl
+    exact R.getMaxCex_is_cex not_M_a
   }
 
-  lemma Preorder.maxOfNotMax_is_max
-    [R : Preorder α]
+  lemma QPreorder.maxOfNotMax_is_max
+    [R : QPreorder α]
     [F : Finite α]
-    {a : α} {not_M_a : a ∉ M}
-  : maxOfNotMax a not_M_a ∈ M := by
+    {a : α} {not_M_a : a ∉ R.M}
+  : R.maxOfNotMax a not_M_a ∈ R.M := by
     unfold maxOfNotMax
     simp
     split <;> try assumption
     case inr h =>
-      apply maxOfNotMax_is_max (a := getMaxCex a not_M_a)
+      apply maxOfNotMax_is_max (a := R.getMaxCex a not_M_a)
   termination_by maxOfNotMax_is_max a _ =>
     a
   decreasing_by {
     simp_wf
-    exact R.getMaxCex_is_cex rfl
+    exact R.getMaxCex_is_cex not_M_a
   }
 
-  lemma Preorder.maxOfNotMax_lt
-    [R : Preorder α]
+  lemma QPreorder.maxOfNotMax_lt
+    [R : QPreorder α]
     [F : Finite α]
-    {a : α} {not_M_a : a ∉ M}
-  : maxOfNotMax a not_M_a < a := by
+    {a : α} {not_M_a : a ∉ R.M}
+  : R.maxOfNotMax a not_M_a < a := by
     unfold maxOfNotMax
     simp
     split
     case inl h =>
       apply R.getMaxCex_is_cex
-      rfl
     case inr h =>
       let ih :=
-        maxOfNotMax_lt (a := getMaxCex a not_M_a) (not_M_a := h)
-      let h : getMaxCex a not_M_a < a :=
-        R.getMaxCex_is_cex rfl
+        maxOfNotMax_lt (a := R.getMaxCex a not_M_a) (not_M_a := h)
+      let h : R.getMaxCex a not_M_a < a :=
+        R.getMaxCex_is_cex not_M_a
       apply Trans.trans ih h
   termination_by maxOfNotMax_lt a _ =>
     a
   decreasing_by {
     simp_wf
-    exact R.getMaxCex_is_cex rfl
+    exact R.getMaxCex_is_cex not_M_a
   }
 
-  theorem Preorder.max_of_not_max
-    [R : Preorder α]
+  theorem QPreorder.max_of_not_max
+    [R : QPreorder α]
     [_F : Finite α]
-  : ∀ a, a ∉ M → ∃ max, max < a ∧ max ∈ R.M :=
+  : ∀ a, a ∉ R.M → ∃ max, max < a ∧ max ∈ R.M :=
     fun a not_M_a => ⟨
       R.maxOfNotMax a not_M_a,
       R.maxOfNotMax_lt,
       R.maxOfNotMax_is_max
     ⟩
 
-  def Preorder.maxOf (a : α) : α :=
-    if h : a ∈ R.M then a else getMaxCex a h
+  def QPreorder.maxOf
+    [R : QPreorder α]
+    (a : α)
+  : α :=
+    if h : a ∈ R.M then a else R.getMaxCex a h
 end
 
 
 
 section sub
-  abbrev Preorder.sub (P : Preorder α) (S : Set α) : Preorder S where
+  abbrev ProtoOrder.sub (P : ProtoOrder α) (S : Set α) : ProtoOrder S where
     le a b := P.le a.1 b.1
     lt a b := P.le a.1 b.1 ∧ ¬ P.le b.1 a.1
     Equiv a b := P.le a.1 b.1 ∧ P.le b.1 a.1
-    lt_def := by
+    lt_def' := by
       simp [LT.lt]
-    equiv_def := by
+    equiv_def' := by
       simp [HasEquiv.Equiv]
-
-    decidableRel _ _ := by
+    toDecidableRel _ _ := by
       simp [DecidableRel, LE.le]
-      apply P.decidableRel
-    decidableEq _a _b := by
+      apply P.toDecidableRel
+    toDecidableEq _a _b := by
       rw [Subtype.mk_eq_mk]
-      apply P.decidableEq
-    le_refl _ := by simp
-    le_trans _ _ _ :=
-      by
-        unfold LE.le
-        simp
-        apply P.le_trans
+      apply P.toDecidableEq
 
+  abbrev QPreorder.sub (P : QPreorder α) (S : Set α) : QPreorder S :=
+    let sub := P.toProtoOrder.sub S
+    {
+      toProtoOrder := sub,
+      le_refl' := fun ⟨a, _⟩ =>
+        by
+          simp [LE.le]
+          exact P.le_refl,
+      lt_trans' := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => by
+        simp only [sub.lt_def, LE.le]
+        rw [← P.lt_def, ← P.lt_def, ← P.lt_def]
+        apply P.lt_trans
+    }
 
+  abbrev Preorder.sub (P : Preorder α) (S : Set α) : Preorder S where
+    toProtoOrder := P.toProtoOrder.sub S
+    le_refl' _ := by simp
+    le_trans' _ _ _ :=
+      by apply P.le_trans
+
+  abbrev QOrder.sub (Q : QOrder α) (S : Set α) : QOrder S :=
+    let sub := Q.toQPreorder.sub S
+    {
+      toQPreorder := sub
+      le_total := fun ⟨a, _⟩ ⟨b, _⟩ => by
+        simp only [LE.le]
+        apply Q.le_total
+    }
 
   abbrev Order.sub (O : Order α) (S : Set α) : Order S where
     toPreorder :=
