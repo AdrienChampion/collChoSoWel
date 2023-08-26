@@ -20,6 +20,70 @@ section def_1_8
     ∀ (S : Set α), [Finite S] → [Inhabited S] → [∀ a, Decidable (a ∈ S)] → (P.sub S).C
 
 
+
+  theorem ProtoOrder.le_total_of_choice_fun
+    (P : ProtoOrder α)
+    (cfun : P.ChoiceFun)
+  : IsTotal α LE.le := by
+    constructor
+    intro a b
+    let S : Set α := {a, b}
+    let _ : Inhabited S :=
+      ⟨⟨a, Set.mem_insert a {b}⟩⟩
+    let _ : ∀ x, Decidable (x ∈ S) := by
+      intro x
+      simp [Set.mem_def]
+      if ha : x = a then
+        rw [ha]
+        exact isTrue (Set.mem_insert a {b})
+      else if hb : x = b then
+        rw [hb]
+        apply isTrue
+        exact Set.mem_insert_of_mem a (Set.mem_singleton b)
+      else
+        apply isFalse
+        intro x_in_S
+        cases x_in_S with
+        | inl x_eq_a =>
+          contradiction
+        | inr x_in_sub =>
+          cases x_in_sub
+          contradiction
+    let ⟨⟨best, best_in_S⟩, C_best⟩ := cfun S
+    simp [(P.sub S).C_def] at C_best
+    cases best_in_S with
+    | inl best_eq_a =>
+      exact Or.inl (best_eq_a ▸ C_best.right)
+    | inr best_in_sub =>
+      cases best_in_sub
+      exact Or.inr C_best.left
+
+  theorem ProtoOrder.le_refl_of_choice_fun
+    (P : ProtoOrder α)
+    (cfun : P.ChoiceFun)
+  : IsRefl α LE.le := by
+    constructor
+    intro a
+    let S : Set α := {a}
+    let _ : Inhabited S :=
+      ⟨⟨a, Set.mem_singleton a⟩⟩
+    let _ : ∀ x, Decidable (x ∈ S) := by
+      intro x
+      if h : x = a then
+        rw [h]
+        apply isTrue (Set.mem_singleton a)
+      else
+        apply isFalse
+        intro x_in_S
+        cases x_in_S
+        contradiction
+    let ⟨⟨best, best_in_S⟩, C_best⟩ := cfun S
+    simp [(P.sub S).C_def] at C_best
+    cases best_in_S
+    assumption
+
+
+
   namespace Order
     variable
       (O : Order α)
