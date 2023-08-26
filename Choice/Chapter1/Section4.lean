@@ -158,12 +158,8 @@ section
             False
         else
           False
-    let lt a b := le a b ∧ ¬ le b a
-    let Equiv a b := le a b ∧ le b a
     {
       le,
-      lt,
-      Equiv,
       toDecidableRel := fun a b => by
         let _ := P.toDecidableEq
         simp [LE.le]
@@ -184,10 +180,6 @@ section
           trivial
       toDecidableEq :=
         decEq,
-      lt_def' := fun _ _ => by
-        rfl
-      equiv_def' := fun _ _ => by
-        rfl
       le_refl' := fun a => by
         simp [LE.le]
       le_trans' := by
@@ -494,14 +486,8 @@ section
 
     abbrev Preorder.Totalizer.toPreorder (t : P.Totalizer) : Preorder α where
       toLE := t.instLETotalizer
-      toLT := t.instLTTotalizer
-      toHasEquiv := t.instHasEquivTotalizer
       le_refl' _ := t.le_refl
       le_trans' _ _ _ h h' := t.le_trans h h'
-      lt_def' := by
-        simp [LT.lt, LE.le]
-      equiv_def' := by
-        simp [HasEquiv.Equiv, LE.le]
       toDecidableRel := t.instDecLETotalizer
       toDecidableEq := inferInstance
 
@@ -1599,7 +1585,7 @@ section
       
       {
         toPreorder := totalized.toPreorder,
-        le_total := by
+        le_total' := by
           intro a b
           apply totalizer.addMissing_post
       }
@@ -1624,7 +1610,7 @@ section
         |>.addMissing
       {
         toPreorder := totalized.toPreorder,
-        le_total := by
+        le_total' := by
           intro a b
           simp [LE.le]
           apply Totalizer.addMissing_post

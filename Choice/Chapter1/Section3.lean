@@ -192,7 +192,7 @@ section lemma_1_d
         if not_a_le_max : a ≤ max then
           exact not_max_le_a (not_a_lt_max not_a_le_max)
         else
-          cases R.le_total a max
+          cases R.le_total' a max
           <;> contradiction
     )
 end lemma_1_d
@@ -262,7 +262,7 @@ section lemma_1_e
       else if ba : b ≤ a then
         exact And.intro (ha ba) ba
       else
-        cases O.le_total a b
+        cases O.le_total' a b
         <;> contradiction
 
     theorem Order.C_eq_M : O.C = O.M :=
@@ -300,7 +300,7 @@ section lemma_1_e
       else if ba : b ≤ a then
         exact And.intro (ha ba) ba
       else
-        cases Q.le_total a b
+        cases Q.le_total' a b
         <;> contradiction
 
     theorem QOrder.C_eq_M : Q.C = Q.M :=

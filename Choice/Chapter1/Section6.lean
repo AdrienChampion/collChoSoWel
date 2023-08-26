@@ -97,8 +97,6 @@ namespace Lemma_1_m_β
     Equiv a b := a ≤ b ∧ b ≤ a
   
   instance instProtoOrderCex : ProtoOrder Cex where
-    lt_def' := by simp [LT.lt]
-    equiv_def' := by simp [HasEquiv.Equiv]
     toDecidableRel a b :=
       if h : a.le b then isTrue h else isFalse h
     toDecidableEq := inferInstance
@@ -210,7 +208,7 @@ class ProtoOrder.IsPiTrans (P : ProtoOrder α) : Prop where
 
 
 
-lemma lemma_1_n
+theorem lemma_1_n
   [P : ProtoOrder α]
   [T : IsTotal α P.le]
   [PiT : P.IsPiTrans]
@@ -268,6 +266,44 @@ lemma lemma_1_n
       · exact not_x_le_a
     let not_y_le_a : ¬ y ≤ a := by
       let res := PiT.pi_trans a_lt_x x_equiv_y
+      simp [P.lt_def] at res
+      exact res.right
+    contradiction
+
+
+
+/-- Skipping the `a)` of `lemma_1_o` part that quasi-trans and PI-trans are independent. -/
+theorem lemma_1_o_b
+  [P : ProtoOrder α]
+  [PP : IsTrans α P.lt]
+  [PI : P.IsPiTrans]
+  [T : IsTotal α P.le]
+: Transitive P.le := by
+  intro a b c a_le_b b_le_c
+  apply Decidable.byContradiction
+  intro not_a_le_c
+  let c_lt_a : c < a := by
+    let c_le_a : c ≤ a := by
+      let res := T.total a c
+      simp [not_a_le_c] at res
+      exact res
+    simp [P.lt_def]
+    exact ⟨c_le_a, not_a_le_c⟩
+  if b_le_a : b ≤ a then
+    let a_equiv_b : a ≈ b := by
+      simp [P.equiv_def]
+      constructor <;> assumption
+    let not_b_le_c := by
+      let res := PI.pi_trans c_lt_a a_equiv_b
+      simp [P.lt_def] at res
+      exact res.right
+    contradiction
+  else
+    let a_lt_b : a < b := by
+      simp [P.lt_def]
+      exact ⟨a_le_b, b_le_a⟩
+    let not_b_le_c := by
+      let res := PP.trans _ _ _ c_lt_a a_lt_b
       simp [P.lt_def] at res
       exact res.right
     contradiction

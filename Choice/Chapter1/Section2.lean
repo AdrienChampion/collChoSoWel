@@ -49,8 +49,9 @@ section
 
   def QPreorder.wellFounded
     [Finite α]
-    (Q : QPreorder α)
-  := Finite.wellFounded_of_trans_of_irrefl Q.lt
+    (_Q : QPreorder α)
+  :=
+    Finite.wellFounded_of_trans_of_irrefl (α := α) LT.lt
 
   instance instWellFoundedLT_of_Finite_QPreorder
     (Q : QPreorder α)
@@ -706,12 +707,6 @@ end
 section sub
   abbrev ProtoOrder.sub (P : ProtoOrder α) (S : Set α) : ProtoOrder S where
     le a b := P.le a.1 b.1
-    lt a b := P.le a.1 b.1 ∧ ¬ P.le b.1 a.1
-    Equiv a b := P.le a.1 b.1 ∧ P.le b.1 a.1
-    lt_def' := by
-      simp [LT.lt]
-    equiv_def' := by
-      simp [HasEquiv.Equiv]
     toDecidableRel _ _ := by
       simp [DecidableRel, LE.le]
       apply P.toDecidableRel
@@ -727,7 +722,7 @@ section sub
         by
           simp [LE.le]
           exact P.le_refl,
-      lt_trans' := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => by
+      pp_trans' := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => by
         simp only [sub.lt_def, LE.le]
         rw [← P.lt_def, ← P.lt_def, ← P.lt_def]
         apply P.lt_trans
@@ -743,7 +738,7 @@ section sub
     let sub := Q.toQPreorder.sub S
     {
       toQPreorder := sub
-      le_total := fun ⟨a, _⟩ ⟨b, _⟩ => by
+      le_total' := fun ⟨a, _⟩ ⟨b, _⟩ => by
         simp only [LE.le]
         apply Q.le_total
     }
@@ -751,6 +746,6 @@ section sub
   abbrev Order.sub (O : Order α) (S : Set α) : Order S where
     toPreorder :=
       O.toPreorder.sub S
-    le_total a b :=
-      O.le_total a.1 b.1
+    le_total' a b :=
+      O.le_total' a.1 b.1
 end sub
