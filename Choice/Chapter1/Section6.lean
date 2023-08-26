@@ -258,19 +258,11 @@ theorem lemma_1_n
   · intro Pβ
     constructor
     intro a b c
-    simp [P.lt_def, P.equiv_def]
+    rw [P.lt_def, P.equiv_def, and_imp, and_imp]
     intro _ab nba bc cb
     apply Decidable.byContradiction
-    simp only [not_and_or, not_not]
     intro h
-    let ca : c ≤ a := by
-      cases h with
-      | inl h =>
-        let res := T.total a c
-        simp [h] at res
-        assumption
-      | inr _ =>
-        assumption
+    let ca := P.not_lt h
     let S₁ : Set α := {b, c}
     let S₂ : Set α := {a, b, c}
     let S₁_sub_S₂ : S₁ ⊆ S₂ := Set.subset_insert a S₁
@@ -487,19 +479,13 @@ theorem lemma_1_r_a
   [P : ProtoOrder α]
   [T : IsTotal α LE.le]
 : P.IsPiTrans ↔ P.IsIpTrans := by
-  let le_total := T.total
   constructor
   · intro PiT
     constructor
     intro a b c a_equiv_b b_lt_c
     apply Decidable.byContradiction
-    simp only [P.lt_def, not_and_or, not_not]
     intro not_a_lt_c
-    let ca : c ≤ a := by
-      cases le_total c a
-      · assumption
-      · simp [*] at not_a_lt_c
-        assumption
+    let ca := P.not_lt not_a_lt_c
     if ac : a ≤ c then
       let b_lt_a := PiT.pi_trans b_lt_c ⟨ca, ac⟩
       apply b_lt_a.right a_equiv_b.left
@@ -510,13 +496,8 @@ theorem lemma_1_r_a
     constructor
     intro a b c a_lt_b b_equiv_c
     apply Decidable.byContradiction
-    simp only [P.lt_def, not_and_or, not_not]
     intro not_a_lt_c
-    let ca : c ≤ a := by
-      cases le_total c a
-      · assumption
-      · simp [*] at not_a_lt_c
-        assumption
+    let ca := P.not_lt not_a_lt_c
     if ac : a ≤ c then
       let c_lt_b := IpT.ip_trans ⟨ca, ac⟩ a_lt_b
       apply c_lt_b.right b_equiv_c.left
@@ -558,16 +539,8 @@ theorem lemma_1_r_c
   intro a b c
   intro a_lt_b b_equiv_c
   apply Decidable.byContradiction
-  simp only [P.lt_def, not_and_or, not_not]
   intro h
-  let ca := by
-    cases h with
-    | inl nac =>
-      let ca := T.total a c 
-      simp [nac] at ca
-      exact ca
-    | inr ca =>
-      exact ca
+  let ca := P.not_lt h
   if ac : a ≤ c then
     let a_equiv_b := IiT.ii_trans ⟨ac, ca⟩ (symm b_equiv_c)
     apply a_lt_b.right a_equiv_b.right

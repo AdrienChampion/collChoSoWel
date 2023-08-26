@@ -88,6 +88,25 @@ section proto_order
     : a ≈ b := by
       simp [P.equiv_def]
       exact ⟨ab, ba⟩
+
+    def ProtoOrder.not_lt'
+      [T : IsTotal α LE.le]
+    : ∀ (a b : α), ¬ a < b → b ≤ a := by
+      intro a b
+      intro nab
+      simp only [P.lt_def, not_and_or, not_not] at nab
+      cases nab with
+      | inl nab =>
+        let res := T.total a b
+        simp [nab] at res
+        assumption
+      | inr ab =>
+        assumption
+    
+    def ProtoOrder.not_lt
+      [IsTotal α LE.le]
+    : ∀ {a b : α}, ¬ a < b → b ≤ a :=
+      fun {a b} => P.not_lt' a b
   end
 
 
