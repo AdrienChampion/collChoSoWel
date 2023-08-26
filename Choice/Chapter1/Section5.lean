@@ -81,6 +81,25 @@ section def_1_8
     simp [(P.sub S).C_def] at C_best
     cases best_in_S
     assumption
+  
+  theorem ProtoOrder.sub_best_of_choice_fun
+    (P : ProtoOrder α)
+    (cfun : P.ChoiceFun)
+    (S : Set α)
+    [Inhabited S]
+    [∀ a, Decidable (a ∈ S)]
+  : ∀ (best : S), best ∈ (P.sub S).C → best ≈ (cfun S).1 := by
+    intro best
+    cases best with | mk best best_in_S =>
+    simp [(P.sub S).C_def, (P.sub S).equiv_def, LE.le]
+    cases cfun S with | mk wit C_wit =>
+    simp [(P.sub S).C_def] at C_wit
+    cases wit with | mk wit wit_in_S =>
+    simp
+    intro C_best
+    constructor
+    · exact C_best wit wit_in_S
+    · exact C_wit best best_in_S
 
 
 

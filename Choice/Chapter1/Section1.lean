@@ -122,6 +122,11 @@ section proto_order
         simp [P.equiv_def]
         exact R.refl a
 
+    instance instIsSymmEquiv : IsSymm α HasEquiv.Equiv where
+      symm a b := by
+        simp only [P.equiv_def]
+        exact And.symm
+
     instance instIsTransLT [T : IsTrans α LE.le] : IsTrans α LT.lt where
       trans a b c := by
         simp [P.lt_def]
@@ -159,6 +164,9 @@ section pp_trans
 
   instance [L : LT α] [Pp : IsPpTrans α] : IsTrans α L.lt where
     trans := Pp.pp_trans
+
+  instance [ProtoOrder α] [IsTrans α LE.le] : IsPpTrans α where
+    pp_trans := instIsTransLT.trans
 end pp_trans
 
 
@@ -177,6 +185,17 @@ section pi_trans
   class IsPiTrans where
     pi_trans : PiTransitive α
 end pi_trans
+
+-- instance [P : ProtoOrder α] [IsTrans α LE.le] : IsPiTrans α where
+--   pi_trans := by
+--     intro a b c
+--     rw [P.lt_def, P.lt_def, P.equiv_def]
+--     intro h
+--     cases h with | intro ab nba =>
+--     intro h
+--     cases h with | intro bc cb =>
+    
+--     sorry
 
 
 
