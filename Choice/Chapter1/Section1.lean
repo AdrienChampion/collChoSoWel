@@ -63,6 +63,11 @@ section
 
   instance : DecidableEq α :=
     P.toDecidableEq
+  
+  instance : DecidableRel P.equiv := by
+    intro a b
+    simp only [P.equiv_def']
+    apply inferInstance
 
 
 

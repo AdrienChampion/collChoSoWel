@@ -76,5 +76,25 @@ theorem lemma_1_k
   Q.choiceFunFin
 
 
+
 /-! We're skipping `lemma_1_l` as it's messy to prove with the current architecture and it does not
 seem to be used a whole lot after it's proved. -/
+
+
+
+theorem Preorder.best_equiv
+  [P : Preorder α]
+  {b₁ : α}
+: b₁ ∈ P.C → (∀ {b₂}, b₂ ∈ P.C ↔ b₁ ≈ b₂) := by
+  intro C_b₁ b₂
+  constructor
+  · intro C_b₂
+    rw [P.equiv_def]
+    constructor
+    · apply C_b₁ b₂
+    · apply C_b₂ b₁
+  · rw [P.equiv_def]
+    intro b₁_equiv_b₂
+    intro a
+    let b₁_le_a := C_b₁ a
+    apply P.le_trans b₁_equiv_b₂.right b₁_le_a
