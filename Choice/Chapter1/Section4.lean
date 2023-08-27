@@ -15,25 +15,24 @@ section subrelation
   abbrev Preorder.semiSubrel' {S : Set α} (O : Order S) (P : Preorder α) : Prop :=
     ∀ (a b : {x // x ∈ S}), P.le a b → ¬ O.le b a → ¬ P.le b a
 
-  @[simp]
   abbrev Order.subrel {S: Set α} (O : Order S) (P : Preorder α) : Prop :=
     ∀ (a b : S), O.le a b → (P.le a b ∧ (¬ O.le b a → ¬ P.le b a))
 
   /-- Definition 1*5, sub-relation, noted `R₁ ⊆ R₂`. -/
-  abbrev Preorder.subrel (P₁ P₂ : Preorder α) : Prop :=
+  abbrev ProtoOrder.subrel (P₁ P₂ : ProtoOrder α) : Prop :=
     ∀ a b, P₁.le a b → (P₂.le a b ∧ (¬ P₁.le b a → ¬ P₂.le b a))
 
-  instance instHasSubsetPreorder (α : Type u) : HasSubset (Preorder α) where
-    Subset R₁ R₂ := R₁.subrel R₂
+  instance instHasSubsetProtoOrder (α : Type u) : HasSubset (ProtoOrder α) where
+    Subset P₁ P₂ := P₁.subrel P₂
   
-  theorem Preorder.subrel_refl (P : Preorder α) : P ⊆ P :=
+  theorem ProtoOrder.subrel_refl (P : ProtoOrder α) : P ⊆ P :=
     fun a b => by simp [P.lt_def]
 
-  theorem Preorder.subrel_trans
-    {a b c : Preorder α}
+  theorem ProtoOrder.subrel_trans
+    {a b c : ProtoOrder α}
   : a ⊆ b → b ⊆ c → a ⊆ c := by
     intro h₁₂ h₂₃
-    simp [Subset, subrel, a.lt_def, b.lt_def, c.lt_def] at *
+    simp [Subset, a.lt_def, b.lt_def, c.lt_def] at *
     intro a b a_b
     let h₁₂ := h₁₂ a b a_b
     let h₂₃ := h₂₃ a b
@@ -46,19 +45,34 @@ section subrelation
       · assumption
       · apply h₁₂.left
 
-  instance : IsRefl (Preorder α) (instHasSubsetPreorder α).Subset where
-    refl := Preorder.subrel_refl
+  @[simp]
+  abbrev ProtoOrder.subrel_def (P₁ P₂ : ProtoOrder α)
+  : P₁ ⊆ P₂ ↔ ∀ a b, P₁.le a b → (P₂.le a b ∧ (¬ P₁.le b a → ¬ P₂.le b a)) :=
+    by trivial
+
+  instance instHasSubsetPreorder (α : Type u) : HasSubset (Preorder α) where
+    Subset R₁ R₂ := R₁.subrel R₂
+
+  @[simp]
+  abbrev Preorder.subrel_def (P₁ P₂ : Preorder α)
+  : P₁ ⊆ P₂ ↔ ∀ a b, P₁.le a b → (P₂.le a b ∧ (¬ P₁.le b a → ¬ P₂.le b a)) :=
+    by trivial
+
+  instance : IsRefl (ProtoOrder α) (instHasSubsetProtoOrder α).Subset where
+    refl := ProtoOrder.subrel_refl
   instance : Trans
-    (instHasSubsetPreorder α).Subset
-    (instHasSubsetPreorder α).Subset
-    (instHasSubsetPreorder α).Subset
+    (instHasSubsetProtoOrder α).Subset
+    (instHasSubsetProtoOrder α).Subset
+    (instHasSubsetProtoOrder α).Subset
   where
-    trans := Preorder.subrel_trans
+    trans := ProtoOrder.subrel_trans
 
   /-- Definition 1*6, order/pre-order compatibility. -/
   abbrev Order.compatWith (O : Order α) (P : Preorder α) : Prop :=
     P.subrel O
   abbrev Preorder.compat (P : Preorder α) (O : Order α) : Prop :=
+    P.subrel O
+  abbrev ProtoOrder.compat (P : ProtoOrder α) (O : Order α) : Prop :=
     P.subrel O
 end subrelation
 
@@ -509,7 +523,7 @@ section
     : Sane (empty P) C := by
       simp [empty]
       constructor
-      · simp [Subset, subrel, LE.le]
+      · simp [ProtoOrder.subrel_def, LE.le]
       · simp [Complement.semiSubrel, LE.le]
         intro a a_in_Incmp b b_in_Incmp P_a_b
         let h := C.isIncmp a b a_in_Incmp b_in_Incmp |>.mp P_a_b
@@ -534,8 +548,9 @@ section
     theorem Preorder.Totalizer.empty_subrel
       (P : Preorder α)
     : P ⊆ (empty P) := by
+      simp [empty]
       intro a b
-      simp [LE.le, empty]
+      simp [LE.le]
 
     theorem Preorder.Totalizer.empty_le_iff
     : ∀ (a b), (empty P).le a b ↔ P.le a b := by
@@ -913,10 +928,11 @@ section
       (ih : P ⊆ self)
     : P ⊆ self.addCmpl C x y incmp
     := by
+      simp [addCmpl]
       intro a b
-      simp [LE.le, le, addCmpl]
       intro P_a_b
       let self_a_b := ih _ _ P_a_b |>.left
+      simp [LE.le, le]
       apply And.intro (Or.inr self_a_b)
       intro P_not_b_a
       let self_not_b_a := -- used in the `try contradiction` below
@@ -1307,7 +1323,6 @@ section
             contradiction
           case inr b_ne_a =>
             intro
-            rw [Bool.eq_false_iff]
             apply add_sane.ssr' ⟨a, h.left⟩ ⟨b, h.right⟩
             · apply self.addMissingCmpl_post
               assumption
@@ -1362,11 +1377,11 @@ section
       {x y : α}
       (incmp : ¬ self.le x y ∧ ¬ self.le y x)
     : self.toPreorder ⊆ self.add x y incmp := by
-      simp only [Subset, subrel, LE.le]
+      simp [add, LE.le]
+      simp only [Subset, ProtoOrder.subrel, LE.le, le]
       intro a b self_a_b
       constructor
-      · simp [add]
-        apply Or.inr (Or.inr self_a_b)
+      · exact Or.inr (Or.inr self_a_b)
       · intro not_self_b_a
         simp [add]
         intro add_x_a
@@ -1376,14 +1391,17 @@ section
           cases h₁ <;> cases h₂
           case inl.inl h₁ h₂ =>
             apply incmp.right
-            apply self.le_trans h₂.right
-            apply self.le_trans self_a_b h₁.left
+            simp [le]
+            apply self.le_trans h₂
+            apply self.le_trans self_a_b h₁
           case inl.inr h₁ h₂ =>
-            let _ := self.le_trans h₁.left h₂
-            contradiction
+            let wrong := self.le_trans h₁ h₂
+            apply Bool.eq_false_iff.mp not_self_b_a
+            assumption
           case inr.inl h₁ h₂ =>
-            let _ := self.le_trans h₁ h₂.right
-            contradiction
+            let wrong := self.le_trans h₁ h₂
+            apply Bool.eq_false_iff.mp not_self_b_a
+            assumption
           case inr.inr h₁ h₂ =>
             apply incmp.left
             apply self.le_trans h₂
@@ -1395,7 +1413,8 @@ section
             apply self.le_trans h.right
             apply self.le_trans self_a_b h.left
           case inr h =>
-            contradiction
+            apply Bool.eq_false_iff.mp not_self_b_a
+            assumption
 
     theorem Preorder.Totalizer.add_post
       [_F : Finite α]
@@ -1431,25 +1450,17 @@ section
       {x : α}
       {elems : List α}
     : self.toPreorder ⊆ aux x self elems := by
-      intro a b
-      simp only [LE.le]
-      intro self_a_b
       induction elems generalizing self with
       | nil =>
-        simp [aux]
-        assumption
+        simp
       | cons y rest ih =>
-        simp only [aux]
+        dsimp [aux]
         split
         case inl incmp =>
-          let h_add := self.add_subrel incmp a b self_a_b
-          let ih := ih h_add.left
-          apply And.intro ih.left
-          intro not_self_b_a
-          apply ih.right
-          apply h_add.right not_self_b_a
+          let h_add := self.add_subrel incmp
+          exact ProtoOrder.subrel_trans h_add ih
         case inr h =>
-          apply ih self_a_b
+          exact ih
 
     theorem Preorder.Totalizer.addFor_subrel
       [_F : Finite α]
@@ -1515,23 +1526,12 @@ section
       {self : P.Totalizer}
       {elems : List α}
     : self.toPreorder ⊆ aux self elems := by
-      intro a b
-      simp only [LE.le]
-      intro self_a_b
       induction elems generalizing self with
       | nil =>
-        simp [aux]
-        assumption
+        simp
       | cons x rest ih =>
-        simp only [aux]
-        let h_addFor :=
-          self.addFor_subrel x a b self_a_b
-        let ih := ih h_addFor.left
-        apply And.intro ih.left
-        intro not_self_b_a
-        apply ih.right
-        apply h_addFor.right
-        assumption
+        dsimp [aux]
+        apply ProtoOrder.subrel_trans (self.addFor_subrel _) ih
 
     theorem Preorder.Totalizer.addMissing_subrel
       [_F : Finite α]
@@ -1594,7 +1594,7 @@ section
       [F : Finite α]
       (P : Preorder α)
     : P ⊆ P.totalize := by
-      apply subrel_trans (Totalizer.empty_subrel P)
+      apply ProtoOrder.subrel_trans (Totalizer.empty_subrel P)
       apply Totalizer.addMissing_subrel
 
 
@@ -1621,7 +1621,7 @@ section
       (P : Preorder α)
       (C : P.Complement)
     : P ⊆ P.totalizeWith C := by
-      apply subrel_trans $ (Totalizer.empty P).addMissingCmpl_subrel (C := C)
+      apply ProtoOrder.subrel_trans $ (Totalizer.empty P).addMissingCmpl_subrel (C := C)
       · exact Totalizer.addMissing_subrel
       · exact Totalizer.empty_Sane P C
     
@@ -1633,7 +1633,7 @@ section
       let h : C.extended ⊆ (Totalizer.empty P).addMissingCmpl C := by
         apply Totalizer.addMissingCmpl_cmpl_subrel
         exact Totalizer.empty_Sane P C
-      apply subrel_trans h
+      apply ProtoOrder.subrel_trans h
       apply Totalizer.addMissing_subrel
   end top_level
 end
@@ -1683,7 +1683,7 @@ theorem lemma_1_h
   let P₂_O := P₂.totalize_subrel
   exists O
   constructor
-  · apply Preorder.subrel_trans P₁_P₂ P₂_O
+  · apply ProtoOrder.subrel_trans P₁_P₂ P₂_O
   · exact P₂_O
 
 
@@ -1708,6 +1708,6 @@ theorem lemma_1_i
   · apply P.totalizeWith_subrel
   · let C'_O : C'.extended ⊆ O :=
       P.totalizeWith_subrelCmpl C'
-    apply Preorder.subrel_trans _ C'_O
+    apply ProtoOrder.subrel_trans _ C'_O
     apply Preorder.extended_subrel
     apply P'.totalize_subrel

@@ -107,6 +107,15 @@ section proto_order
       [IsTotal α LE.le]
     : ∀ {a b : α}, ¬ a < b → b ≤ a :=
       fun {a b} => P.not_lt' a b
+
+    def ProtoOrder.lt_asymm'
+    : ∀ (a b : α), a < b → ¬ b < a := by
+      simp [LT.lt]
+      intro a b ab _ _
+      assumption
+
+    def ProtoOrder.lt_asymm {a b : α} :=
+      P.lt_asymm' a b
   end
 
 
@@ -294,7 +303,6 @@ section preorder
 
     instance : Coe (Preorder α) (QPreorder α) where
       coe P := P.toQPreorder
-
     instance [P : Preorder α] : QPreorder α :=
       P.toQPreorder
   end
@@ -357,6 +365,8 @@ section order
   instance : Coe (Order α) (QOrder α) where
     coe O := O.toQOrder
   instance : Coe (Order α) (Preorder α) where
+    coe O := O.toPreorder
+  instance : Coe (Order α) (ProtoOrder α) where
     coe O := O.toPreorder
   
   instance [O : Order α] : QOrder α :=
