@@ -580,3 +580,21 @@ theorem lemma_3_dec_yx
 :=
   lemma_3_dec_xz swf y_neq_z z_neq_x
 
+
+
+theorem dec_yx_of_aldec_xy
+  [Finite α]
+  (swf : Swf α count)
+  {J : Fin count}
+  (x_neq_y : x ≠ y)
+  (x_neq_z : x ≠ z)
+  (y_neq_z : y ≠ z)
+  (aldec : swf.almost_decisive {J} x y)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
+: swf.decisive {J} y x :=
+  lemma_3_dec_xz swf x_neq_y y_neq_z aldec wpp iia
+  |> swf.almost_decisive_of_decisive
+  |> (lemma_3_dec_yz swf x_neq_z x_neq_y · wpp iia)
+  |> swf.almost_decisive_of_decisive
+  |> (lemma_3_dec_yx swf y_neq_z x_neq_z.symm · wpp iia)

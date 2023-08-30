@@ -90,9 +90,9 @@ section decisive
     → (swf chs).lt x y
 
   theorem Swf.almost_decisive_of_decisive
-    (swf : Swf α count)
-    (I : Set (Fin count))
-    (x y : α)
+    {swf : Swf α count}
+    {I : Set (Fin count)}
+    {x y : α}
   : swf.decisive I x y → swf.almost_decisive I x y := by
     intro dec
     intro chs h _
