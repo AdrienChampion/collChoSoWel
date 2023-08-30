@@ -8,10 +8,15 @@ namespace Choice
 
 /-! ## Aggregating individual choices -/
 
-structure Choices (O : Type u) where
-  count : Nat
+structure Choices (O : Type u) (count : ℕ) where
   choices : Array O
-  inv : choices.size = count
+  inv : count = choices.size
+
+@[simp]
+protected abbrev Choices.count (_ : Choices O count) :=
+  count
+
+
 
 @[simp]
 protected abbrev Choices.ProtoOrdered (α : Type u) :=
@@ -30,18 +35,31 @@ protected abbrev Choices.Ordered (α : Type u) :=
 section
   variable
     {O : Type u}
-    (chs : Choices O)
+    (chs : Choices O count)
 
-  abbrev Choices.Idx :=
-    Fin chs.count
+  abbrev Choices.Idx (_ : Choices O count) :=
+    Fin count
+
+  def Choices.invariant :=
+    chs.inv
+
   def Choices.get (idx : chs.Idx) : O :=
-    chs.choices.get (chs.inv ▸ idx)
+    let ⟨i, h_i⟩ := idx
+    let _ : i < chs.choices.size := by
+      rw [← chs.inv]
+      exact h_i
+    chs.choices[i]
 
-  instance : GetElem (Choices O) Nat O (fun chs idx => idx < chs.count) where
+  instance (chs : Choices O count) : Coe (Fin chs.choices.size) chs.Idx where
+    coe i := by
+      let ⟨i, h_i⟩ := i
+      exact ⟨i, chs.inv ▸ h_i⟩
+
+  instance : GetElem (Choices O count) Nat O (fun chs idx => idx < chs.count) where
     getElem chs idx idx_lt_count :=
       chs.get ⟨idx, idx_lt_count⟩
 
-  instance : GetElem (Choices O) (Fin count) O (fun chs _ => count ≤ chs.count) where
+  instance : GetElem (Choices O count) (Fin count) O (fun chs _ => count ≤ chs.count) where
     getElem chs idx count_le_count :=
       let legit : idx.1 < chs.count :=
         Nat.lt_of_lt_of_le idx.2 count_le_count
@@ -59,24 +77,49 @@ section
     abbrev Choices.any : Prop :=
       ∃ (idx : chs.Idx), f idx chs[idx]
   end
+
+
+
+  section map
+    variable
+      (f : chs.Idx → O → O')
+
+    def Choices.map : Choices O' count := {
+      choices :=
+        chs.choices.mapIdx (fun idx o => f idx o)
+      inv := by
+        simp [Array.size_mapIdx, chs.inv]
+    }
+
+    def Choices.get_map
+      (i : chs.Idx)
+    : (chs.map f).get i = f i (chs.get i)
+    := by
+      simp [map, get, invariant]
+    def Choices.getElem_map
+      (i : chs.Idx)
+    : (chs.map f)[i] = f i chs[i]
+    := by
+      simp [GetElem.getElem, get_map]
+  end map
 end
 
 
 
 /-! ## Collective Choice Rule (CCR) -/
 section ccr
-  abbrev Ccr (Src Tgt : Type u) : Type u :=
-    Choices Src → Tgt
+  abbrev Ccr (Src Tgt : Type u) (count : ℕ) : Type u :=
+    Choices Src count → Tgt
 
   /-- Definition 2.1. -/
-  abbrev Ccr.OrderToProto (α : Type u) : Type u :=
-    Ccr (Order α) (ProtoOrder α)
+  abbrev Ccr.OrderToProto (α : Type u) (count : ℕ) : Type u :=
+    Ccr (Order α) (ProtoOrder α) count
 
   /-- Definition 2.2. -/
   abbrev Ccr.is_decisive
-    (ccr : Ccr.OrderToProto α)
+    (ccr : Ccr.OrderToProto α count)
   : Prop :=
-    ∀ (chs : Choices.Ordered α), Total (ccr chs).le
+    ∀ (chs : Choices.Ordered α count), Total (ccr chs).le
 end ccr
 
 
@@ -86,7 +129,7 @@ section pareto
     (α : Type u)
     [DecidableEq α]
     {O : Type u}
-    (chs : Choices O)
+    (chs : Choices O count)
 
 
   abbrev Pareto.le
@@ -122,7 +165,7 @@ section pareto
   @[simp]
   abbrev Pareto.mkProtoOrder
     {α : Type u} [DecidableEq α]
-    (chs : Choices.ProtoOrdered α)
+    (chs : Choices.ProtoOrdered α count)
   : ProtoOrder α :=
     Pareto.ProtoOrder (C := ⟨fun o => o⟩) chs
 
@@ -141,7 +184,7 @@ section pareto
   @[simp]
   abbrev Pareto.mkPreorder
     {α : Type u} [DecidableEq α]
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
   : Preorder α :=
     Pareto.Preorder (C := ⟨fun o => o⟩) chs
   
@@ -237,18 +280,20 @@ section pareto
     {α : Type u}
     [DecidableEq α]
     {O : Type u}
-    (chs : Choices O)
+    {count : ℕ}
+    (chs : Choices O count)
 
 
 
   abbrev lemma_2_c
-    [_C : Coe O (Order α)]
+    [Coe O (Order α)]
     [Inhabited α]
+    [Inhabited chs.Idx]
   :=
     And.intro (Pareto.lt_trans α chs)
     $ And.intro (Pareto.lt_asymm α chs)
-    $ And.intro (Pareto.strongLt_trans)
-    $ Pareto.strongLt_asymm
+    $ And.intro (Pareto.strongLt_trans α chs)
+    $ Pareto.strongLt_asymm α chs
 
   theorem Pareto.lt_of_strong_lt
     [C : Coe O (Order α)]
@@ -270,16 +315,16 @@ section pareto
  
   /-- Definition 2.5. -/
   abbrev Ccr.is_pareto_inclusive
-    (ccr : Ccr.OrderToProto α)
+    (ccr : Ccr.OrderToProto α count)
   : Prop :=
     let _ : Coe (Order α) (ProtoOrder α) :=
       ⟨fun o => o.toProtoOrder⟩
-    ∀ (chs : Choices (Order α)),
+    ∀ (chs : Choices (Order α) count),
       Pareto.ProtoOrder α chs ⊆ ccr chs
 
   /-- Definition 2.6. -/
   abbrev Choices.is_pareto_optimal
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
     (x : α)
   : Prop :=
     ¬ ∃ (y : α), (Pareto.mkPreorder chs).lt y x
@@ -289,7 +334,7 @@ section pareto
   theorem lemma_2_e
     [Finite α]
     [Inhabited α]
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
   : ∃ (x : α), chs.is_pareto_optimal x := by
     let P := Pareto.mkPreorder chs
     let max := lemma_1_b α

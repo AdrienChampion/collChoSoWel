@@ -713,6 +713,15 @@ section sub
     toDecidableEq _a _b := by
       rw [Subtype.mk_eq_mk]
       apply P.toDecidableEq
+  
+  theorem ProtoOrder.sub_iff
+    [P : ProtoOrder α]
+    {S : Set α}
+    {x y : α}
+    {x_in_S : x ∈ S}
+    {y_in_S : y ∈ S}
+  : (P.sub S).le ⟨x, x_in_S⟩ ⟨y, y_in_S⟩ ↔ P.le x y := by
+    simp [LE.le]
 
   abbrev QPreorder.sub (P : QPreorder α) (S : Set α) : QPreorder S :=
     let sub := P.toProtoOrder.sub S

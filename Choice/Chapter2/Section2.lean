@@ -8,13 +8,13 @@ namespace Choice
 
 section kaldor
   abbrev Choices.above
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
     (x : α)
   : Set α :=
     fun y => Pareto.le α chs x y
   
   protected abbrev Kaldor.lt
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
     (x y : α)
   : Prop :=
     ∃ (z : chs.above x),
@@ -23,7 +23,7 @@ section kaldor
 
   abbrev Kaldor
     (_P : ProtoOrder α)
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
   : Prop :=
     ∀ (x y : α),
       x < y ↔ Kaldor.lt chs x y
@@ -31,7 +31,7 @@ section kaldor
   /-- An actual CEX would be better as inputs might be unsat. -/
   theorem Kaldor.inconsistent
     (P : ProtoOrder α)
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
     [Inhabited chs.Idx]
     (x y z w : α)
     (z_above_x : z ∈ chs.above x)
@@ -58,20 +58,20 @@ end kaldor
 
 section scitovsky
   protected abbrev Scitovsky.lt
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
     (x y : α)
   : Prop :=
     Kaldor.lt chs x y ∧ ¬ Kaldor.lt chs y x
 
   abbrev Scitovsky
     (_P : ProtoOrder α)
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
   : Prop :=
     ∀ (x y : α), x < y ↔ Scitovsky.lt chs x y
 
   /-- An actual CEX would be better as inputs might be unsat. -/
   theorem Scitovsky.inconsistent
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
     (x y z x' y' : α)
     (x'_above_x : x' ∈ chs.above x)
     (y'_above_y : y' ∈ chs.above y)
@@ -125,14 +125,14 @@ section scitovsky
 
 
   abbrev Scitovsky.condition
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
   : Prop :=
     ∀ (x y : α),
       (∃ (x' : chs.above x), Pareto.lt α chs x' y)
       → ∀ (y' : chs.above y), ∃ (x' : chs.above x), Pareto.le α chs x' y'
 
   theorem lemma_2_h
-    (chs : Choices.Ordered α)
+    (chs : Choices.Ordered α count)
     [Inhabited chs.Idx]
   : Scitovsky.condition chs → Transitive (Scitovsky.lt chs) := by
     intro h

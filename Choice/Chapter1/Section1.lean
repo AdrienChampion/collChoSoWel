@@ -358,6 +358,16 @@ section order
   def Order.le_total (O : Order α) : ∀ {a b : α}, a ≤ b ∨ b ≤ a :=
     @Order.le_total' α O
 
+  theorem Order.le_subst (O O' : Order α) (h : O = O') : O.le x y → O'.le x y := by
+    cases h
+    intro
+    assumption
+
+  theorem Order.lt_subst (O O' : Order α) (h : O = O') : O.lt x y → O'.lt x y := by
+    cases h
+    intro
+    assumption
+
   def Order.toQOrder (O : Order α) : QOrder α where
     toQPreorder := O.toPreorder.toQPreorder
     le_total' := O.le_total'
