@@ -99,8 +99,8 @@ theorem lemma_3_xz
   (chs : Choices.Ordered α count)
   (J : chs.Idx)
   (x y z : α)
-  (x_neq_y : x ≠ y)
-  (y_neq_z : y ≠ z)
+  (x_ne_y : x ≠ y)
+  (y_ne_z : y ≠ z)
   (J_x_lt_z : chs[J].lt x z)
 : swf.almost_decisive {J} x y
   → swf.Wpp
@@ -109,7 +109,7 @@ theorem lemma_3_xz
 := by
   intro aldec wpp iia
 
-  let x_neq_z : x ≠ z := by
+  let x_ne_z : x ≠ z := by
     intro h
     rw [h] at J_x_lt_z
     let _ := chs[J]
@@ -118,8 +118,8 @@ theorem lemma_3_xz
   -- tagged as dead code while used everywhere...
   let _f (i : chs.Idx) :=
     if h_i : J = i
-    then chs[i].reframe_xy_yz x y z x_neq_y x_neq_z y_neq_z (h_i ▸ J_x_lt_z)
-    else chs[i].reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z
+    then chs[i].reframe_xy_yz x y z x_ne_y x_ne_z y_ne_z (h_i ▸ J_x_lt_z)
+    else chs[i].reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z
   cases J with | mk J h_J =>
   let f' i (_O : Order α) := _f i
 
@@ -127,14 +127,14 @@ theorem lemma_3_xz
     chs.getElem_map f' i
 
   let J_chs'_def
-  : (chs.map f')[J] = chs[J].reframe_xy_yz x y z x_neq_y x_neq_z y_neq_z J_x_lt_z := by
+  : (chs.map f')[J] = chs[J].reframe_xy_yz x y z x_ne_y x_ne_z y_ne_z J_x_lt_z := by
     let tmp := get_chs'_def ⟨J, h_J⟩
     rw [tmp]
     simp
   let other_chs'_def
     (i : chs.Idx)
     (h_i_ne_J : i.1 ≠ J)
-  : (chs.map f')[i.1] = chs[i].reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z := by
+  : (chs.map f')[i.1] = chs[i].reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z := by
     rw [get_chs'_def i]
     simp
     intro i_def
@@ -144,16 +144,16 @@ theorem lemma_3_xz
 
   let J'_x_lt_y : (chs.map f')[J].lt x y := by
     rw [J_chs'_def]
-    exact chs[J].reframe_xy_yz_post_xy x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+    exact chs[J].reframe_xy_yz_post_xy x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
   let J'_y_lt_z : (chs.map f')[J].lt y z := by
     rw [J_chs'_def]
-    exact chs[J].reframe_xy_yz_post_yz x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+    exact chs[J].reframe_xy_yz_post_yz x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
   -- let J'_x_lt_z : (chs.map f')[J].lt x z := by
   --   rw [J_chs'_def]
   --   constructor
-  --   · exact chs[J].reframe_xy_yz_post_xz x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+  --   · exact chs[J].reframe_xy_yz_post_xz x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
   --     |>.mp J_x_lt_z.left
-  --   · exact chs[J].reframe_xy_yz_post_zx x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+  --   · exact chs[J].reframe_xy_yz_post_zx x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
   --     |>.not.mp J_x_lt_z.right
 
   let O'_y_lt_x : ∀ (i : Set.compl {Fin.mk J h_J}), (chs.map f')[i.1].lt y x := by
@@ -165,7 +165,7 @@ theorem lemma_3_xz
       simp [h]
     let chs'_i_def := other_chs'_def ⟨i, h_i⟩ h
     apply Order.lt_subst _ _ chs'_i_def.symm
-    apply chs[i].reframe_yx_yz_post_yx x y z x_neq_y x_neq_z y_neq_z
+    apply chs[i].reframe_yx_yz_post_yx x y z x_ne_y x_ne_z y_ne_z
   let O'_y_lt_z : ∀ (i : Set.compl {Fin.mk J h_J}), (chs.map f')[i.1].lt y z := by
     intro i
     let ⟨⟨i, h_i⟩, i_ne_J⟩ := i
@@ -175,7 +175,7 @@ theorem lemma_3_xz
       simp [h]
     let chs'_i_def := other_chs'_def ⟨i, h_i⟩ h
     apply Order.lt_subst _ _ chs'_i_def.symm
-    apply chs[i].reframe_yx_yz_post_yz x y z x_neq_y x_neq_z y_neq_z
+    apply chs[i].reframe_yx_yz_post_yz x y z x_ne_y x_ne_z y_ne_z
 
   let S : Set α := {x, z}
   let x_in_S : x ∈ S := Set.mem_insert x {z}
@@ -209,21 +209,21 @@ theorem lemma_3_xz
             constructor
             · intro chs_x_le_z
               apply Order.le_subst _ _ J_chs'_def.symm
-              apply chs[J].reframe_xy_yz_post_xz x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+              apply chs[J].reframe_xy_yz_post_xz x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
                 |>.mp chs_x_le_z
             · intro chs'_x_le_z
-              apply chs[J].reframe_xy_yz_post_xz x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+              apply chs[J].reframe_xy_yz_post_xz x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
                 |>.mpr
               exact (chs.map f')[J].le_subst _ J_chs'_def chs'_x_le_z
           else
             constructor
             · intro chs_x_le_z
               apply
-                (chs[i].reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).le_subst
+                (chs[i].reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ).symm
-              apply chs[i].reframe_yx_yz_post_xz x y z x_neq_y x_neq_z y_neq_z |>.mp chs_x_le_z
+              apply chs[i].reframe_yx_yz_post_xz x y z x_ne_y x_ne_z y_ne_z |>.mp chs_x_le_z
             · intro chs'_x_le_z
-              rw [chs[i].reframe_yx_yz_post_xz x y z x_neq_y x_neq_z y_neq_z]
+              rw [chs[i].reframe_yx_yz_post_xz x y z x_ne_y x_ne_z y_ne_z]
               apply
                 (chs.map f')[i].le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ)
@@ -235,21 +235,21 @@ theorem lemma_3_xz
             constructor
             · intro chs_z_le_x
               apply Order.le_subst _ _ J_chs'_def.symm
-              apply chs[J].reframe_xy_yz_post_zx x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+              apply chs[J].reframe_xy_yz_post_zx x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
                 |>.mp chs_z_le_x
             · intro chs'_z_le_x
-              apply chs[J].reframe_xy_yz_post_zx x y z x_neq_y x_neq_z y_neq_z J_x_lt_z
+              apply chs[J].reframe_xy_yz_post_zx x y z x_ne_y x_ne_z y_ne_z J_x_lt_z
                 |>.mpr
               exact (chs.map f')[J].le_subst _ J_chs'_def chs'_z_le_x
           else
             constructor
             · intro chs_z_le_x
               apply
-                (chs[i].reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).le_subst
+                (chs[i].reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ).symm
-              apply chs[i].reframe_yx_yz_post_zx x y z x_neq_y x_neq_z y_neq_z |>.mp chs_z_le_x
+              apply chs[i].reframe_yx_yz_post_zx x y z x_ne_y x_ne_z y_ne_z |>.mp chs_z_le_x
             · intro chs'_z_le_x
-              rw [chs[i].reframe_yx_yz_post_zx x y z x_neq_y x_neq_z y_neq_z]
+              rw [chs[i].reframe_yx_yz_post_zx x y z x_ne_y x_ne_z y_ne_z]
               apply
                 (chs.map f')[i].le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ)
@@ -311,8 +311,8 @@ theorem lemma_3_zy
   (chs : Choices.Ordered α count)
   (J : chs.Idx)
   (x y z : α)
-  (x_neq_y : x ≠ y)
-  (x_neq_z : x ≠ z)
+  (x_ne_y : x ≠ y)
+  (x_ne_z : x ≠ z)
   (J_z_lt_y : chs[J].lt z y)
 : swf.almost_decisive {J} x y
   → swf.Wpp
@@ -321,7 +321,7 @@ theorem lemma_3_zy
 := by
   intro aldec wpp iia
 
-  let y_neq_z : y ≠ z := by
+  let y_ne_z : y ≠ z := by
     intro h
     rw [h] at J_z_lt_y
     let _ := chs[J]
@@ -330,8 +330,8 @@ theorem lemma_3_zy
   -- tagged as dead code while used everywhere...
   let _f (i : chs.Idx) :=
     if h_i : J = i
-    then chs[i].reframe_xy_yz z x y x_neq_z.symm y_neq_z.symm x_neq_y (h_i ▸ J_z_lt_y)
-    else chs[i].reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z
+    then chs[i].reframe_xy_yz z x y x_ne_z.symm y_ne_z.symm x_ne_y (h_i ▸ J_z_lt_y)
+    else chs[i].reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z
   cases J with | mk J h_J =>
   let f' i (_O : Order α) := _f i
 
@@ -339,14 +339,14 @@ theorem lemma_3_zy
     chs.getElem_map f' i
 
   let J_chs'_def
-  : (chs.map f')[J] = chs[J].reframe_xy_yz z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y := by
+  : (chs.map f')[J] = chs[J].reframe_xy_yz z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y := by
     let tmp := get_chs'_def ⟨J, h_J⟩
     rw [tmp]
     simp
   let other_chs'_def
     (i : chs.Idx)
     (h_i_ne_J : i.1 ≠ J)
-  : (chs.map f')[i.1] = chs[i].reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z := by
+  : (chs.map f')[i.1] = chs[i].reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z := by
     rw [get_chs'_def i]
     simp
     intro i_def
@@ -356,16 +356,16 @@ theorem lemma_3_zy
 
   let J'_z_lt_x : (chs.map f')[J].lt z x := by
     rw [J_chs'_def]
-    exact chs[J].reframe_xy_yz_post_xy z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+    exact chs[J].reframe_xy_yz_post_xy z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
   let J'_x_lt_y : (chs.map f')[J].lt x y := by
     rw [J_chs'_def]
-    exact chs[J].reframe_xy_yz_post_yz z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+    exact chs[J].reframe_xy_yz_post_yz z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
   -- let J'_z_lt_y : (chs.map f')[J].lt z y := by
   --   rw [J_chs'_def]
   --   constructor
-  --   · exact chs[J].reframe_xy_yz_post_xz z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+  --   · exact chs[J].reframe_xy_yz_post_xz z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
   --     |>.mp J_z_lt_y.left
-  --   · exact chs[J].reframe_xy_yz_post_zx z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+  --   · exact chs[J].reframe_xy_yz_post_zx z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
   --     |>.not.mp J_z_lt_y.right
 
   let O'_z_lt_x : ∀ (i : Set.compl {Fin.mk J h_J}), (chs.map f')[i.1].lt z x := by
@@ -377,7 +377,7 @@ theorem lemma_3_zy
       simp [h]
     let chs'_i_def := other_chs'_def ⟨i, h_i⟩ h
     apply Order.lt_subst _ _ chs'_i_def.symm
-    apply chs[i].reframe_zx_yx_post_zx x y z x_neq_y x_neq_z y_neq_z
+    apply chs[i].reframe_zx_yx_post_zx x y z x_ne_y x_ne_z y_ne_z
   let O'_y_lt_x : ∀ (i : Set.compl {Fin.mk J h_J}), (chs.map f')[i.1].lt y x := by
     intro i
     let ⟨⟨i, h_i⟩, i_ne_J⟩ := i
@@ -387,7 +387,7 @@ theorem lemma_3_zy
       simp [h]
     let chs'_i_def := other_chs'_def ⟨i, h_i⟩ h
     apply Order.lt_subst _ _ chs'_i_def.symm
-    apply chs[i].reframe_zx_yx_post_yx x y z x_neq_y x_neq_z y_neq_z
+    apply chs[i].reframe_zx_yx_post_yx x y z x_ne_y x_ne_z y_ne_z
 
   let S : Set α := {z, y}
   let z_in_S : z ∈ S := Set.mem_insert z {y}
@@ -421,21 +421,21 @@ theorem lemma_3_zy
             constructor
             · intro chs_x_le_z
               apply Order.le_subst _ _ J_chs'_def.symm
-              apply chs[J].reframe_xy_yz_post_xz z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+              apply chs[J].reframe_xy_yz_post_xz z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
                 |>.mp chs_x_le_z
             · intro chs'_x_le_z
-              apply chs[J].reframe_xy_yz_post_xz z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+              apply chs[J].reframe_xy_yz_post_xz z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
                 |>.mpr
               exact (chs.map f')[J].le_subst _ J_chs'_def chs'_x_le_z
           else
             constructor
             · intro chs_z_le_y
               apply
-                (chs[i].reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).le_subst
+                (chs[i].reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ).symm
-              apply chs[i].reframe_zx_yx_post_zy x y z x_neq_y x_neq_z y_neq_z |>.mp chs_z_le_y
+              apply chs[i].reframe_zx_yx_post_zy x y z x_ne_y x_ne_z y_ne_z |>.mp chs_z_le_y
             · intro chs'_z_le_y
-              rw [chs[i].reframe_zx_yx_post_zy x y z x_neq_y x_neq_z y_neq_z]
+              rw [chs[i].reframe_zx_yx_post_zy x y z x_ne_y x_ne_z y_ne_z]
               apply
                 (chs.map f')[i].le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ)
@@ -447,21 +447,21 @@ theorem lemma_3_zy
             constructor
             · intro chs_z_le_x
               apply Order.le_subst _ _ J_chs'_def.symm
-              apply chs[J].reframe_xy_yz_post_zx z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+              apply chs[J].reframe_xy_yz_post_zx z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
                 |>.mp chs_z_le_x
             · intro chs'_z_le_x
-              apply chs[J].reframe_xy_yz_post_zx z x y x_neq_z.symm y_neq_z.symm x_neq_y J_z_lt_y
+              apply chs[J].reframe_xy_yz_post_zx z x y x_ne_z.symm y_ne_z.symm x_ne_y J_z_lt_y
                 |>.mpr
               exact (chs.map f')[J].le_subst _ J_chs'_def chs'_z_le_x
           else
             constructor
             · intro chs_y_le_z
               apply
-                (chs[i].reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).le_subst
+                (chs[i].reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ).symm
-              apply chs[i].reframe_zx_yx_post_yz x y z x_neq_y x_neq_z y_neq_z |>.mp chs_y_le_z
+              apply chs[i].reframe_zx_yx_post_yz x y z x_ne_y x_ne_z y_ne_z |>.mp chs_y_le_z
             · intro chs'_y_le_z
-              rw [chs[i].reframe_zx_yx_post_yz x y z x_neq_y x_neq_z y_neq_z]
+              rw [chs[i].reframe_zx_yx_post_yz x y z x_ne_y x_ne_z y_ne_z]
               apply
                 (chs.map f')[i].le_subst
                   _ (other_chs'_def ⟨i, h_i⟩ h_iJ)
@@ -516,85 +516,257 @@ theorem lemma_3_zy
   · exact not_y_le_z
 
 
-theorem lemma_3_dec_xz
+theorem lemma_3_a_1
   [Finite α]
   (swf : Swf α count)
   {J : Fin count}
-  (x_neq_y : x ≠ y)
-  (y_neq_z : y ≠ z)
+  (x_ne_y : x ≠ y)
+  (y_ne_z : y ≠ z)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
 : swf.almost_decisive {J} x y
-  → swf.Wpp
-  → swf.Iia
   → swf.decisive {J} x z
 := by
-  intro aldec wpp iia chs J_x_lt_z
+  intro aldec chs J_x_lt_z
   simp at J_x_lt_z
-  let x_lt_z := lemma_3_xz swf chs J x y z x_neq_y y_neq_z J_x_lt_z aldec wpp iia
+  let x_lt_z := lemma_3_xz swf chs J x y z x_ne_y y_ne_z J_x_lt_z aldec wpp iia
   simp [Swf.decisive]
   exact x_lt_z
 
 
-theorem lemma_3_dec_zy
+theorem lemma_3_a_2
   [Finite α]
   (swf : Swf α count)
   {J : Fin count}
-  (x_neq_y : x ≠ y)
-  (x_neq_z : x ≠ z)
+  (x_ne_y : x ≠ y)
+  (x_ne_z : x ≠ z)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
 : swf.almost_decisive {J} x y
-  → swf.Wpp
-  → swf.Iia
   → swf.decisive {J} z y
 := by
-  intro aldec wpp iia chs J_z_lt_y
+  intro aldec chs J_z_lt_y
   simp at J_z_lt_y
-  let z_lt_y := lemma_3_zy swf chs J x y z x_neq_y x_neq_z J_z_lt_y aldec wpp iia
+  let z_lt_y := lemma_3_zy swf chs J x y z x_ne_y x_ne_z J_z_lt_y aldec wpp iia
   simp [Swf.decisive]
   intros
   exact z_lt_y
 
 
-theorem lemma_3_dec_yz
+theorem lemma_3_a_3
   [Finite α]
   (swf : Swf α count)
   {J : Fin count}
-  (x_neq_z : x ≠ z)
-  (x_neq_y : x ≠ y)
-: swf.almost_decisive {J} x z
-  → swf.Wpp
-  → swf.Iia
-  → swf.decisive {J} y z
-:=
-  lemma_3_dec_zy swf x_neq_z x_neq_y
-
-
-theorem lemma_3_dec_yx
-  [Finite α]
-  (swf : Swf α count)
-  {J : Fin count}
-  (y_neq_z : y ≠ z)
-  (z_neq_x : z ≠ x)
-: swf.almost_decisive {J} y z
-  → swf.Wpp
-  → swf.Iia
-  → swf.decisive {J} y x
-:=
-  lemma_3_dec_xz swf y_neq_z z_neq_x
-
-
-
-theorem dec_yx_of_aldec_xy
-  [Finite α]
-  (swf : Swf α count)
-  {J : Fin count}
-  (x_neq_y : x ≠ y)
-  (x_neq_z : x ≠ z)
-  (y_neq_z : y ≠ z)
-  (aldec : swf.almost_decisive {J} x y)
+  (x_ne_z : x ≠ z)
+  (x_ne_y : x ≠ y)
   (wpp : swf.Wpp)
   (iia : swf.Iia)
-: swf.decisive {J} y x :=
-  lemma_3_dec_xz swf x_neq_y y_neq_z aldec wpp iia
+: swf.almost_decisive {J} x z
+  → swf.decisive {J} y z
+:=
+  lemma_3_a_2 swf x_ne_z x_ne_y wpp iia
+
+
+theorem lemma_3_a_4
+  [Finite α]
+  (swf : Swf α count)
+  {J : Fin count}
+  (y_ne_z : y ≠ z)
+  (z_ne_x : z ≠ x)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
+: swf.almost_decisive {J} y z
+  → swf.decisive {J} y x
+:=
+  lemma_3_a_1 swf y_ne_z z_ne_x wpp iia
+
+
+
+theorem lemma_3_a_5
+  [Finite α]
+  (swf : Swf α count)
+  {J : Fin count}
+  (x_ne_y : x ≠ y)
+  (x_ne_z : x ≠ z)
+  (y_ne_z : y ≠ z)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
+: swf.almost_decisive {J} x y → swf.decisive {J} y x := fun aldec =>
+  lemma_3_a_1 swf x_ne_y y_ne_z wpp iia aldec
   |> swf.almost_decisive_of_decisive
-  |> (lemma_3_dec_yz swf x_neq_z x_neq_y · wpp iia)
+  |> lemma_3_a_3 swf x_ne_z x_ne_y wpp iia
   |> swf.almost_decisive_of_decisive
-  |> (lemma_3_dec_yx swf y_neq_z x_neq_z.symm · wpp iia)
+  |> lemma_3_a_4 swf y_ne_z x_ne_z.symm wpp iia
+
+
+theorem lemma_3_a_6
+  [Finite α]
+  (swf : Swf α count)
+  {J : Fin count}
+  (x_ne_y : x ≠ y)
+  (x_ne_z : x ≠ z)
+  (y_ne_z : y ≠ z)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
+: swf.almost_decisive {J} y x
+  → swf.decisive {J} y z
+  ∧ swf.decisive {J} z x
+  ∧ swf.decisive {J} x y
+:= fun aldec =>
+  let dec_yz := lemma_3_a_1 swf x_ne_y.symm x_ne_z wpp iia aldec
+  let dec_zx := lemma_3_a_2 swf x_ne_y.symm y_ne_z wpp iia aldec
+  let dec_xy := lemma_3_a_5 swf x_ne_y.symm y_ne_z x_ne_z wpp iia aldec
+  ⟨dec_yz, dec_zx, dec_xy⟩
+
+
+theorem lemma_3_a_7
+  [Finite α]
+  (swf : Swf α count)
+  {J : Fin count}
+  (x_ne_y : x ≠ y)
+  (x_ne_z : x ≠ z)
+  (y_ne_z : y ≠ z)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
+: swf.almost_decisive {J} x y
+  → swf.decisive {J} y z
+  ∧ swf.decisive {J} z x
+  ∧ swf.decisive {J} x y
+:= fun aldec =>
+  let dec_yx := lemma_3_a_5 swf x_ne_y x_ne_z y_ne_z wpp iia aldec
+  let aldec_yx := swf.almost_decisive_of_decisive dec_yx
+  lemma_3_a_6 swf x_ne_y x_ne_z y_ne_z wpp iia aldec_yx
+
+
+theorem lemma_1_a_partialDictator
+  [Finite α]
+  (swf : Swf α count)
+  {J : Fin count}
+  (x_ne_y : x ≠ y)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
+: ∀ (z : α),
+  x ≠ z
+  → y ≠ z
+  → swf.almost_decisive {J} x y
+  → swf.partialDictator J {x, y, z}
+:= fun z x_ne_z y_ne_z aldec_xy ⟨a, a_in_S⟩ ⟨b, b_in_S⟩ chs => by
+  let dec_xz :=
+    lemma_3_a_1 swf x_ne_y y_ne_z wpp iia aldec_xy
+  let dec_yx :=
+    lemma_3_a_5 swf x_ne_y x_ne_z y_ne_z wpp iia aldec_xy
+  let dec_zy :=
+    lemma_3_a_2 swf x_ne_y x_ne_z wpp iia aldec_xy
+  let ⟨dec_yz, dec_zx, dec_xy⟩ :=
+    lemma_3_a_7 swf x_ne_y x_ne_z y_ne_z wpp iia aldec_xy
+  simp [ProtoOrder.lt_def]
+  simp at a_in_S b_in_S
+  cases a_in_S <;> cases b_in_S
+  case inl.inl h_ax h_bx =>
+    rw [h_ax, h_bx]
+    simp [Preorder.le_refl]
+  case inl.inr h_ax h_b =>
+    cases h_b with
+    | inl h_by =>
+      rw [h_ax, h_by]
+      intro xy nyx
+      exact dec_xy chs (by simp ; exact ⟨xy, nyx⟩)
+    | inr h_bz =>
+      rw [h_ax, h_bz]
+      intro xz nzx
+      exact dec_xz chs (by simp ; exact ⟨xz, nzx⟩)
+  case inr.inl h_a h_bx =>
+    cases h_a with
+    | inl h_ay =>
+      rw [h_ay, h_bx]
+      intro yx nxy
+      exact dec_yx chs (by simp ; exact ⟨yx, nxy⟩)
+    | inr h_az =>
+      rw [h_az, h_bx]
+      intro zx nxz
+      exact dec_zx chs (by simp ; exact ⟨zx, nxz⟩)
+  case inr.inr h_a h_b =>
+    cases h_a <;> cases h_b
+    case inl.inl h_ay h_by =>
+      rw [h_ay, h_by]
+      simp [Preorder.le_refl]
+    case inl.inr h_ay h_bz =>
+      rw [h_ay, h_bz]
+      intro yz nzy
+      exact dec_yz chs (by simp ; exact ⟨yz, nzy⟩)
+    case inr.inl h_az h_by =>
+      rw [h_az, h_by]
+      intro zy nyz
+      exact dec_zy chs (by simp ; exact ⟨zy, nyz⟩)
+    case inr.inr h_az h_bz =>
+      rw [h_az, h_bz]
+      simp [Preorder.le_refl]
+
+
+theorem lemma_1_a
+  [Finite α]
+  (swf : Swf α count)
+  {J : Fin count}
+  (x_ne_y : x ≠ y)
+  (wpp : swf.Wpp)
+  (iia : swf.Iia)
+: ∀ (z : α),
+  x ≠ z
+  → y ≠ z
+  → swf.almost_decisive {J} x y
+  → swf.dictator J
+:= fun z x_ne_z y_ne_z aldec_xy u v => by
+  let dec_yx :=
+    lemma_3_a_5 swf x_ne_y x_ne_z y_ne_z wpp iia aldec_xy
+  let ⟨_, _, dec_xy⟩ :=
+    lemma_3_a_7 swf x_ne_y x_ne_z y_ne_z wpp iia aldec_xy
+  if h_uv : u = v then
+    rw [h_uv]
+    exact swf.decisive_refl
+  else if h_ux : u = x then
+    if h_vx : v = x then
+      rw [h_ux, h_vx] at h_uv
+      contradiction
+    else if h_vy : v = y then
+      rw [h_ux, h_vy]
+      exact dec_xy
+    else
+      rw [h_ux]
+      exact lemma_3_a_1 swf x_ne_y h_vy.ne_symm wpp iia aldec_xy
+  else if h_uy : u = y then
+    if h_vx : v = x then
+      rw [h_uy, h_vx]
+      exact dec_yx
+    else if h_vy : v = y then
+      rw [h_uy, h_vy] at h_uv
+      contradiction
+    else
+      rw [h_uy]
+      apply
+        lemma_3_a_7 swf
+          (x := x) (y := y) (z := v)
+          x_ne_y h_vx.ne_symm h_vy.ne_symm
+          wpp iia aldec_xy
+        |>.left
+  else
+    if h_vx : v = x then
+      rw [h_vx]
+      exact
+        lemma_3_a_7 swf
+          x_ne_y h_ux.ne_symm h_uy.ne_symm
+          wpp iia aldec_xy
+        |>.right
+        |>.left
+    else if h_vy : v = y then
+      rw [h_vy]
+      exact
+        lemma_3_a_2 swf x_ne_y h_ux.ne_symm wpp iia aldec_xy
+    else
+      let aldec_xu : swf.almost_decisive {J} x u :=
+        lemma_3_a_1 swf
+          x_ne_y (fun h => by let _ := h.symm ; contradiction)
+          wpp iia aldec_xy
+        |> swf.almost_decisive_of_decisive
+      exact
+        lemma_3_a_7 swf h_ux.ne_symm h_vx.ne_symm h_uv wpp iia aldec_xu
+        |>.left
