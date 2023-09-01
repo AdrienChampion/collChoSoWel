@@ -6,14 +6,76 @@ namespace Choice
 
 
 
+-- section keep_xy_force_y_lt_z
+--   abbrev Order.keep_xy_force_y_lt_z
+--     [Finite α]
+--     (O : Order α)
+--     (x y z : α)
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : Preorder α where
+--     le a b :=
+--       if a = x ∧ b = y then
+--         O.le a b
+--       else if a = y ∧ b = x then
+--         O.le b a
+--       else if a = y ∧ b = z then
+--         True
+--       else if a = z ∧ b = y then
+--         False
+--       else
+--         a = b
+
+--     toDecidableRel := by
+--       simp [DecidableRel, LE.le]
+--       intro a b
+--       exact inferInstance
+--     toDecidableEq := inferInstance
+
+--     le_refl' a := by
+--       simp [LE.le]
+--       if h_ax : a = x then
+--         simp [h_ax, x_ne_y]
+--       else if h_ay : a = y then
+--         simp [h_ay, x_ne_y.symm, y_ne_z]
+--       else
+--         simp [h_ax, h_ay]
+    
+--     le_trans' a b c := by
+--       simp [LE.le]
+--       if h_ax : a = x then
+--         simp [h_ax, x_ne_y, x_ne_z]
+--         if h_bx : b = x then
+--           simp [h_bx, x_ne_y]
+--           split
+--           · intro ; assumption
+--           · simp [x_ne_z]
+--         else if h_by : b = y then
+--           simp [h_bx, h_by, x_ne_y.symm, y_ne_z]
+--           intro xy
+--           split
+--           case inl h_cx => simp [h_cx]
+--           case inr h_cx =>
+--             split
+--             case inl h_cz =>
+--               simp [h_cz]
+--             sorry
+--       else
+--         sorry
+      
+-- end keep_xy_force_y_lt_z
+
+
+
 section yx_yz
   abbrev Order.protoReframe_yx_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
   : Preorder α where
     le a b :=
       if a = x ∧ b = z then
@@ -39,24 +101,24 @@ section yx_yz
     le_refl' a := by
       simp [LE.le]
       if h_x : a = x then
-        simp [h_x, x_neq_y, x_neq_z]
+        simp [h_x, x_ne_y, x_ne_z]
       else if h_y : a = y then
-        simp [h_x, h_y, x_neq_y.symm, y_neq_z]
+        simp [h_x, h_y, x_ne_y.symm, y_ne_z]
       else if h_z : a = z then
-        simp [h_x, h_y, h_z, x_neq_z.symm, y_neq_z.symm]
+        simp [h_x, h_y, h_z, x_ne_z.symm, y_ne_z.symm]
       else
         simp [h_x, h_y, h_z]
 
     le_trans' a b c := by
       simp [LE.le]
       if h_ax : a = x then
-        simp [h_ax, x_neq_y, x_neq_z]
+        simp [h_ax, x_ne_y, x_ne_z]
         if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
           split
-          case inl h_c => simp [h_c, x_neq_y, x_neq_z]
+          case inl h_c => simp [h_c, x_ne_y, x_ne_z]
           split
-          case inl h_c => simp [h_c, y_neq_z]
+          case inl h_c => simp [h_c, y_ne_z]
           split
           case inl h_c => simp [h_c]
           case inr h_c =>
@@ -64,22 +126,22 @@ section yx_yz
             let _ := z_eq_c.symm
             contradiction
         else if h_bx : b = x then
-          simp [h_bz, h_bx, x_neq_y, x_neq_z]
+          simp [h_bz, h_bx, x_ne_y, x_ne_z]
         else if h_by : b = y then
-          simp [h_bz, h_bx, h_by, x_neq_y.symm, y_neq_z]
+          simp [h_bz, h_bx, h_by, x_ne_y.symm, y_ne_z]
         else
           simp [h_bz, h_bx, h_by]
           intro x_eq_b
           let _ := x_eq_b.symm
           contradiction
       else if h_az : a = z then
-        simp [h_ax, h_az, x_neq_z.symm, y_neq_z.symm]
+        simp [h_ax, h_az, x_ne_z.symm, y_ne_z.symm]
         if h_bx : b = x then
-          simp [h_bx, x_neq_z, x_neq_y]
+          simp [h_bx, x_ne_z, x_ne_y]
           split
-          case inl h_c => simp [h_c, y_neq_z.symm, x_neq_z.symm]
+          case inl h_c => simp [h_c, y_ne_z.symm, x_ne_z.symm]
           split
-          case inl h_c => simp [h_c, x_neq_y.symm, y_neq_z]
+          case inl h_c => simp [h_c, x_ne_y.symm, y_ne_z]
           split
           · intros
             assumption
@@ -87,18 +149,18 @@ section yx_yz
             let _ := x_eq_c.symm
             contradiction
         else if h_by : b = y then
-          simp [h_by, y_neq_z, x_neq_y.symm]
+          simp [h_by, y_ne_z, x_ne_y.symm]
         else if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
         else
           simp [*]
           intro z_eq_b
           let _ := z_eq_b.symm
           contradiction
       else if h_ay : a = y then
-        simp [h_ax, h_az, h_ay, x_neq_y.symm, y_neq_z]
+        simp [h_ax, h_az, h_ay, x_ne_y.symm, y_ne_z]
         if h_bx : b = x then
-          simp [h_bx, x_neq_y, x_neq_z]
+          simp [h_bx, x_ne_y, x_ne_z]
           split
           case inl h_c => simp [h_c]
           split
@@ -109,7 +171,7 @@ section yx_yz
           let _ := x_eq_c.symm
           contradiction
         else if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
           split
           case inl h_c => simp [h_c]
           split
@@ -120,18 +182,18 @@ section yx_yz
           let _ := z_eq_c.symm
           contradiction
         else if h_by : b = y then
-          simp [h_by, x_neq_y.symm, y_neq_z]
+          simp [h_by, x_ne_y.symm, y_ne_z]
         else
           simp [h_bx, h_bz, h_by]
           intro y_eq_b
           let _ := y_eq_b.symm
           contradiction
       else if h_az : a = z then
-        simp [h_ax, h_ay, h_az, x_neq_z.symm, y_neq_z.symm]
+        simp [h_ax, h_ay, h_az, x_ne_z.symm, y_ne_z.symm]
         if h_bx : b = x then
-          simp [h_bx, x_neq_y, x_neq_z]
+          simp [h_bx, x_ne_y, x_ne_z]
           split
-          case inl h_c => simp [h_c, x_neq_z.symm, y_neq_z.symm]
+          case inl h_c => simp [h_c, x_ne_z.symm, y_ne_z.symm]
           split
           case inl h_c => simp [h_c]
           split
@@ -140,9 +202,9 @@ section yx_yz
           let _ := x_eq_c.symm
           contradiction
         else if h_by : b = y then
-          simp [h_by, x_neq_y.symm, y_neq_z]
+          simp [h_by, x_ne_y.symm, y_ne_z]
         else if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
         else
           simp [h_bx, h_by, h_bz]
           intro z_eq_b
@@ -158,74 +220,74 @@ section yx_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le x z ↔ (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).le x z) := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le x z ↔ (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).le x z) := by
     simp [Preorder.toProtoOrder]
 
   theorem Order.protoReframe_yx_yz_post_zx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le z x ↔ (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).le z x) := by
-    simp [Preorder.toProtoOrder, x_neq_z]
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le z x ↔ (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).le z x) := by
+    simp [Preorder.toProtoOrder, x_ne_z]
 
   theorem Order.protoReframe_yx_yz_post_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).lt y x := by
-    simp [Preorder.toProtoOrder, x_neq_y.symm, y_neq_z]
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).lt y x := by
+    simp [Preorder.toProtoOrder, x_ne_y.symm, y_ne_z]
 
   theorem Order.protoReframe_yx_yz_post_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).lt y z := by
-    simp [Preorder.toProtoOrder, x_neq_y.symm, y_neq_z]
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).lt y z := by
+    simp [Preorder.toProtoOrder, x_ne_y.symm, y_ne_z]
 
   abbrev Order.reframe_yx_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
   : Order α :=
-    O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z
+    O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z
     |>.totalize
 
   theorem Order.reframe_yx_yz_post_xz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le x z ↔ (O.reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).le x z) := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le x z ↔ (O.reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).le x z) := by
     -- simp [Order.toPreorder, Preorder.toProtoOrder, reframe]
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_xz :=
-      (O.protoReframe_yx_yz_post_xz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz_post_xz x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_zx :=
-      (O.protoReframe_yx_yz_post_zx x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz_post_zx x y z x_ne_y x_ne_z y_ne_z)
     constructor
     · intro O_xz
       apply proto_sub_reframe x z _ |>.left
       exact proto_lemma_xz.mp O_xz
     · intro reframe_xz
-      let _ := (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).toDecidableRel
+      let _ := (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).toDecidableRel
       apply Decidable.byContradiction
       intro O_nxz
       let proto_nxz := proto_lemma_xz.not.mp O_nxz
@@ -242,23 +304,23 @@ section yx_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le z x ↔ (O.reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).le z x) := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le z x ↔ (O.reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).le z x) := by
     -- simp [Order.toPreorder, Preorder.toProtoOrder, reframe]
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_xz :=
-      (O.protoReframe_yx_yz_post_xz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz_post_xz x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_zx :=
-      (O.protoReframe_yx_yz_post_zx x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz_post_zx x y z x_ne_y x_ne_z y_ne_z)
     constructor
     · intro O_zx
       apply proto_sub_reframe z x _ |>.left
       exact proto_lemma_zx.mp O_zx
     · intro reframe_zx
-      let _ := (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).toDecidableRel
+      let _ := (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).toDecidableRel
       apply Decidable.byContradiction
       intro O_nzx
       let proto_nzx := proto_lemma_zx.not.mp O_nzx
@@ -275,14 +337,14 @@ section yx_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).lt y x := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).lt y x := by
     let proto_y_lt_x :=
-      O.protoReframe_yx_yz_post_yx x y z x_neq_y x_neq_z y_neq_z
+      O.protoReframe_yx_yz_post_yx x y z x_ne_y x_ne_z y_ne_z
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z)
     simp [ProtoOrder.lt_def]
     let h := proto_sub_reframe y x proto_y_lt_x.left
     apply And.intro h.left
@@ -292,14 +354,14 @@ section yx_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z).lt y z := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z).lt y z := by
     let proto_y_lt_z :=
-      O.protoReframe_yx_yz_post_yz x y z x_neq_y x_neq_z y_neq_z
+      O.protoReframe_yx_yz_post_yz x y z x_ne_y x_ne_z y_ne_z
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_yx_yz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_yx_yz x y z x_ne_y x_ne_z y_ne_z)
     simp [ProtoOrder.lt_def]
     let h := proto_sub_reframe y z proto_y_lt_z.left
     apply And.intro h.left
@@ -310,24 +372,24 @@ section yx_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
   : ∃ (O' : Order α),
     (O.le x z ↔ O'.le x z)
     ∧ (O.le z x ↔ O'.le z x)
     ∧ O'.lt y x
     ∧ O'.lt y z
   := by
-    let O' := O.reframe_yx_yz x y z x_neq_y x_neq_z y_neq_z
+    let O' := O.reframe_yx_yz x y z x_ne_y x_ne_z y_ne_z
     exists O'
     constructor
-    · exact O.reframe_yx_yz_post_xz x y z x_neq_y x_neq_z y_neq_z
+    · exact O.reframe_yx_yz_post_xz x y z x_ne_y x_ne_z y_ne_z
     constructor
-    · exact O.reframe_yx_yz_post_zx x y z x_neq_y x_neq_z y_neq_z
+    · exact O.reframe_yx_yz_post_zx x y z x_ne_y x_ne_z y_ne_z
     constructor
-    · exact O.reframe_yx_yz_post_yx x y z x_neq_y x_neq_z y_neq_z
-    · exact O.reframe_yx_yz_post_yz x y z x_neq_y x_neq_z y_neq_z
+    · exact O.reframe_yx_yz_post_yx x y z x_ne_y x_ne_z y_ne_z
+    · exact O.reframe_yx_yz_post_yz x y z x_ne_y x_ne_z y_ne_z
 end yx_yz
 
 
@@ -337,9 +399,9 @@ section xy_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
   : Preorder α where
     le a b :=
@@ -366,24 +428,24 @@ section xy_yz
     le_refl' a := by
       simp [LE.le]
       if h_x : a = x then
-        simp [h_x, x_neq_y, x_neq_z]
+        simp [h_x, x_ne_y, x_ne_z]
       else if h_y : a = y then
-        simp [h_x, h_y, x_neq_y.symm, y_neq_z]
+        simp [h_x, h_y, x_ne_y.symm, y_ne_z]
       else if h_z : a = z then
-        simp [h_x, h_y, h_z, x_neq_z.symm, y_neq_z.symm]
+        simp [h_x, h_y, h_z, x_ne_z.symm, y_ne_z.symm]
       else
         simp [h_x, h_y, h_z]
 
     le_trans' a b c := by
       simp [LE.le]
       if h_ax : a = x then
-        simp [h_ax, x_neq_y, x_neq_z]
+        simp [h_ax, x_ne_y, x_ne_z]
         if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
           split
-          case inl h_c => simp [h_c, x_neq_y, x_neq_z]
+          case inl h_c => simp [h_c, x_ne_y, x_ne_z]
           split
-          case inl h_c => simp [h_c, y_neq_z]
+          case inl h_c => simp [h_c, y_ne_z]
           split
           case inl h_c => simp [h_c]
           case inr h_c =>
@@ -391,9 +453,9 @@ section xy_yz
             let _ := z_eq_c.symm
             contradiction
         else if h_bx : b = x then
-          simp [h_bz, h_bx, x_neq_y, x_neq_z]
+          simp [h_bz, h_bx, x_ne_y, x_ne_z]
         else if h_by : b = y then
-          simp [h_bz, h_bx, h_by, x_neq_y.symm, y_neq_z]
+          simp [h_bz, h_bx, h_by, x_ne_y.symm, y_ne_z]
           split ; intro ; contradiction
           case inr h_cx =>
             split
@@ -408,11 +470,11 @@ section xy_yz
           let _ := x_eq_b.symm
           contradiction
       else if h_az : a = z then
-        simp [h_ax, h_az, x_neq_z.symm, y_neq_z.symm]
+        simp [h_ax, h_az, x_ne_z.symm, y_ne_z.symm]
         if h_bx : b = x then
-          simp [h_bx, x_neq_z, x_neq_y]
+          simp [h_bx, x_ne_z, x_ne_y]
           split
-          case inl h_c => simp [h_c, y_neq_z.symm, x_neq_z.symm]
+          case inl h_c => simp [h_c, y_ne_z.symm, x_ne_z.symm]
           split
           case inl h_c =>
             intro h'
@@ -425,20 +487,20 @@ section xy_yz
             let _ := x_eq_c.symm
             contradiction
         else if h_by : b = y then
-          simp [h_by, y_neq_z, x_neq_y.symm]
+          simp [h_by, y_ne_z, x_ne_y.symm]
         else if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
         else
           simp [*]
           intro z_eq_b
           let _ := z_eq_b.symm
           contradiction
       else if h_ay : a = y then
-        simp [h_ax, h_az, h_ay, x_neq_y.symm, y_neq_z]
+        simp [h_ax, h_az, h_ay, x_ne_y.symm, y_ne_z]
         if h_bx : b = x then
-          simp [h_bx, x_neq_y, x_neq_z]
+          simp [h_bx, x_ne_y, x_ne_z]
         else if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
           split
           case inl h_c =>
             exact h.right
@@ -450,18 +512,18 @@ section xy_yz
           let _ := z_eq_c.symm
           contradiction
         else if h_by : b = y then
-          simp [h_by, x_neq_y.symm, y_neq_z]
+          simp [h_by, x_ne_y.symm, y_ne_z]
         else
           simp [h_bx, h_bz, h_by]
           intro y_eq_b
           let _ := y_eq_b.symm
           contradiction
       else if h_az : a = z then
-        simp [h_ax, h_ay, h_az, x_neq_z.symm, y_neq_z.symm]
+        simp [h_ax, h_ay, h_az, x_ne_z.symm, y_ne_z.symm]
         if h_bx : b = x then
-          simp [h_bx, x_neq_y, x_neq_z]
+          simp [h_bx, x_ne_y, x_ne_z]
           split
-          case inl h_c => simp [h_c, x_neq_z.symm, y_neq_z.symm]
+          case inl h_c => simp [h_c, x_ne_z.symm, y_ne_z.symm]
           split
           case inl h_c =>
             intro h'
@@ -473,9 +535,9 @@ section xy_yz
           let _ := x_eq_c.symm
           contradiction
         else if h_by : b = y then
-          simp [h_by, x_neq_y.symm, y_neq_z]
+          simp [h_by, x_ne_y.symm, y_ne_z]
         else if h_bz : b = z then
-          simp [h_bz, x_neq_z.symm, y_neq_z.symm]
+          simp [h_bz, x_ne_z.symm, y_ne_z.symm]
         else
           simp [h_bx, h_by, h_bz]
           intro z_eq_b
@@ -491,80 +553,80 @@ section xy_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.le x z ↔ (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).le x z) := by
+  : (O.le x z ↔ (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).le x z) := by
     simp [Preorder.toProtoOrder]
 
   theorem Order.protoReframe_xy_yz_post_zx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.le z x ↔ (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).le z x) := by
-    simp [Preorder.toProtoOrder, x_neq_z]
+  : (O.le z x ↔ (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).le z x) := by
+    simp [Preorder.toProtoOrder, x_ne_z]
 
   theorem Order.protoReframe_xy_yz_post_xy
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).lt x y := by
-    simp [Preorder.toProtoOrder, x_neq_y.symm, y_neq_z]
+  : (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).lt x y := by
+    simp [Preorder.toProtoOrder, x_ne_y.symm, y_ne_z]
 
   theorem Order.protoReframe_xy_yz_post_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).lt y z := by
-    simp [Preorder.toProtoOrder, x_neq_z.symm, x_neq_y.symm, y_neq_z]
+  : (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).lt y z := by
+    simp [Preorder.toProtoOrder, x_ne_z.symm, x_ne_y.symm, y_ne_z]
 
   abbrev Order.reframe_xy_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
   : Order α :=
-    O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h
+    O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h
     |>.totalize
 
   theorem Order.reframe_xy_yz_post_xz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.le x z ↔ (O.reframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).le x z) := by
+  : (O.le x z ↔ (O.reframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).le x z) := by
     -- simp [Order.toPreorder, Preorder.toProtoOrder, reframe]
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h)
     let proto_lemma_xz :=
-      (O.protoReframe_xy_yz_post_xz x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz_post_xz x y z x_ne_y x_ne_z y_ne_z h)
     let proto_lemma_zx :=
-      (O.protoReframe_xy_yz_post_zx x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz_post_zx x y z x_ne_y x_ne_z y_ne_z h)
     constructor
     · intro O_xz
       apply proto_sub_reframe x z _ |>.left
       exact proto_lemma_xz.mp O_xz
     · intro reframe_xz
-      let _ := (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).toDecidableRel
+      let _ := (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).toDecidableRel
       apply Decidable.byContradiction
       intro O_nxz
       let proto_nxz := proto_lemma_xz.not.mp O_nxz
@@ -581,24 +643,24 @@ section xy_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.le z x ↔ (O.reframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).le z x) := by
+  : (O.le z x ↔ (O.reframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).le z x) := by
     -- simp [Order.toPreorder, Preorder.toProtoOrder, reframe]
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h)
     let proto_lemma_xz :=
-      (O.protoReframe_xy_yz_post_xz x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz_post_xz x y z x_ne_y x_ne_z y_ne_z h)
     let proto_lemma_zx :=
-      (O.protoReframe_xy_yz_post_zx x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz_post_zx x y z x_ne_y x_ne_z y_ne_z h)
     constructor
     · intro O_zx
       apply proto_sub_reframe z x _ |>.left
       exact proto_lemma_zx.mp O_zx
     · intro reframe_zx
-      let _ := (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).toDecidableRel
+      let _ := (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).toDecidableRel
       apply Decidable.byContradiction
       intro O_nzx
       let proto_nzx := proto_lemma_zx.not.mp O_nzx
@@ -615,15 +677,15 @@ section xy_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.reframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).lt x y := by
+  : (O.reframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).lt x y := by
     let proto_x_lt_y :=
-      O.protoReframe_xy_yz_post_xy x y z x_neq_y x_neq_z y_neq_z h
+      O.protoReframe_xy_yz_post_xy x y z x_ne_y x_ne_z y_ne_z h
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h)
     simp [ProtoOrder.lt_def]
     let h := proto_sub_reframe x y proto_x_lt_y.left
     apply And.intro h.left
@@ -633,15 +695,15 @@ section xy_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
-  : (O.reframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h).lt y z := by
+  : (O.reframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h).lt y z := by
     let proto_y_lt_z :=
-      O.protoReframe_xy_yz_post_yz x y z x_neq_y x_neq_z y_neq_z h
+      O.protoReframe_xy_yz_post_yz x y z x_ne_y x_ne_z y_ne_z h
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h)
+      (O.protoReframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h)
     simp [ProtoOrder.lt_def]
     let h := proto_sub_reframe y z proto_y_lt_z.left
     apply And.intro h.left
@@ -652,9 +714,9 @@ section xy_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
     (h : O.lt x z)
   : ∃ (O' : Order α),
     (O.le x z ↔ O'.le x z)
@@ -662,15 +724,15 @@ section xy_yz
     ∧ O'.lt x y
     ∧ O'.lt y z
   := by
-    let O' := O.reframe_xy_yz x y z x_neq_y x_neq_z y_neq_z h
+    let O' := O.reframe_xy_yz x y z x_ne_y x_ne_z y_ne_z h
     exists O'
     constructor
-    · exact O.reframe_xy_yz_post_xz x y z x_neq_y x_neq_z y_neq_z h
+    · exact O.reframe_xy_yz_post_xz x y z x_ne_y x_ne_z y_ne_z h
     constructor
-    · exact O.reframe_xy_yz_post_zx x y z x_neq_y x_neq_z y_neq_z h
+    · exact O.reframe_xy_yz_post_zx x y z x_ne_y x_ne_z y_ne_z h
     constructor
-    · exact O.reframe_xy_yz_post_xy x y z x_neq_y x_neq_z y_neq_z h
-    · exact O.reframe_xy_yz_post_yz x y z x_neq_y x_neq_z y_neq_z h
+    · exact O.reframe_xy_yz_post_xy x y z x_ne_y x_ne_z y_ne_z h
+    · exact O.reframe_xy_yz_post_yz x y z x_ne_y x_ne_z y_ne_z h
 section xy_yz
 
 
@@ -680,9 +742,9 @@ section zx_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
   : Preorder α where
     le a b :=
       if a = y ∧ b = z then
@@ -708,11 +770,11 @@ section zx_yx
     le_refl' a := by
       simp [LE.le]
       if h_x : a = x then
-        simp [h_x, x_neq_y, x_neq_z]
+        simp [h_x, x_ne_y, x_ne_z]
       else if h_y : a = y then
-        simp [h_x, h_y, x_neq_y.symm, y_neq_z]
+        simp [h_x, h_y, x_ne_y.symm, y_ne_z]
       else if h_z : a = z then
-        simp [h_x, h_y, h_z, x_neq_z.symm, y_neq_z.symm]
+        simp [h_x, h_y, h_z, x_ne_z.symm, y_ne_z.symm]
       else
         simp [h_x, h_y, h_z]
 
@@ -720,9 +782,9 @@ section zx_yx
       simp [LE.le]
       if h_ax : a = x then
         rw [h_ax]
-        simp [x_neq_y, x_neq_z]
+        simp [x_ne_y, x_ne_z]
         if h_bx : b = x then
-          simp [h_bx, x_neq_z, x_neq_y]
+          simp [h_bx, x_ne_z, x_ne_y]
         else if h_by : b = y then
           simp [h_bx, h_by]
         else if h_bz : b = z then
@@ -733,21 +795,21 @@ section zx_yx
           let _ := h_bx x_eq_b.symm
           contradiction
       else if h_ay : a = y then
-        simp [h_ax, h_ay, x_neq_y, x_neq_y.symm, x_neq_z, y_neq_z]
+        simp [h_ax, h_ay, x_ne_y, x_ne_y.symm, x_ne_z, y_ne_z]
         split
         case inl h_bz =>
           rw [h_bz]
-          simp [y_neq_z.symm]
+          simp [y_ne_z.symm]
           split
           case inl h_cy =>
             rw [h_cy]
-            simp [y_neq_z]
+            simp [y_ne_z]
           case inr h_cy =>
-            simp [x_neq_z.symm]
+            simp [x_ne_z.symm]
             split
             case inl h_cx =>
               rw [h_cx]
-              simp [x_neq_z]
+              simp [x_ne_z]
             case inr h_cx =>
               split
               · intros ; assumption
@@ -760,7 +822,7 @@ section zx_yx
           split
           case inl h_bx =>
             rw [h_bx]
-            simp [x_neq_y, x_neq_z]
+            simp [x_ne_y, x_ne_z]
             split ; intro ; contradiction
             split ; intro ; contradiction
             intro h_xc
@@ -768,32 +830,32 @@ section zx_yx
           case inr h_bx =>
             intro h_yb
             rw [h_yb.symm]
-            simp [x_neq_y.symm]
+            simp [x_ne_y.symm]
       else if h_az : a = z then
         rw [h_az]
-        simp [y_neq_z.symm]
+        simp [y_ne_z.symm]
         if h_bx : b = x then
-          simp [h_az, h_bx, x_neq_z, x_neq_y]
+          simp [h_az, h_bx, x_ne_z, x_ne_y]
           split ; intro ; contradiction
           split ; intro ; contradiction
-          intro h ; rw [← h] ; simp [x_neq_z]
+          intro h ; rw [← h] ; simp [x_ne_z]
         else if h_by : b = y then
-          simp [h_bx, h_by, y_neq_z, x_neq_y.symm, y_neq_z.symm, x_neq_z.symm]
+          simp [h_bx, h_by, y_ne_z, x_ne_y.symm, y_ne_z.symm, x_ne_z.symm]
           intro z_le_x
           simp [z_le_x]
           split
           case inl h_cz =>
-            simp [h_cz, y_neq_z.symm]
+            simp [h_cz, y_ne_z.symm]
           case inr h_cz =>
             split
             case inl h_cx =>
-              rw [h_cx] ; simp [x_neq_y]
+              rw [h_cx] ; simp [x_ne_y]
             case inr h_cx =>
               intro h_yc
               rw [← h_yc]
               simp
         else if h_bz : b = z then
-          simp [h_bx, h_by, h_bz, y_neq_z.symm]
+          simp [h_bx, h_by, h_bz, y_ne_z.symm]
         else
           simp [h_bx, h_by, h_bz]
           intro h_zb
@@ -809,74 +871,74 @@ section zx_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le y z ↔ (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).le y z) := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le y z ↔ (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).le y z) := by
     simp [Preorder.toProtoOrder]
 
   theorem Order.protoReframe_zx_yx_post_zy
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le z y ↔ (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).le z y) := by
-    simp [Preorder.toProtoOrder, y_neq_z.symm]
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le z y ↔ (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).le z y) := by
+    simp [Preorder.toProtoOrder, y_ne_z.symm]
 
   theorem Order.protoReframe_zx_yx_post_zx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).lt z x := by
-    simp [Preorder.toProtoOrder, x_neq_y, y_neq_z.symm, x_neq_z]
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).lt z x := by
+    simp [Preorder.toProtoOrder, x_ne_y, y_ne_z.symm, x_ne_z]
 
   theorem Order.protoReframe_zx_yx_post_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).lt y x := by
-    simp [Preorder.toProtoOrder, x_neq_z, y_neq_z, x_neq_y]
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).lt y x := by
+    simp [Preorder.toProtoOrder, x_ne_z, y_ne_z, x_ne_y]
 
   abbrev Order.reframe_zx_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
   : Order α :=
-    O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z
+    O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z
     |>.totalize
 
   theorem Order.reframe_zx_yx_post_yz
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le y z ↔ (O.reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).le y z) := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le y z ↔ (O.reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).le y z) := by
     -- simp [Order.toPreorder, Preorder.toProtoOrder]
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_yz :=
-      (O.protoReframe_zx_yx_post_yz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx_post_yz x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_zy :=
-      (O.protoReframe_zx_yx_post_zy x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx_post_zy x y z x_ne_y x_ne_z y_ne_z)
     constructor
     · intro O_yz
       apply proto_sub_reframe y z _ |>.left
       exact proto_lemma_yz.mp O_yz
     · intro reframe_yz
-      let _ := (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).toDecidableRel
+      let _ := (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).toDecidableRel
       apply Decidable.byContradiction
       intro O_nyz
       let proto_nyz := proto_lemma_yz.not.mp O_nyz
@@ -893,23 +955,23 @@ section zx_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.le z y ↔ (O.reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).le z y) := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.le z y ↔ (O.reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).le z y) := by
     -- simp [Order.toPreorder, Preorder.toProtoOrder, reframe]
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_zy :=
-      (O.protoReframe_zx_yx_post_zy x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx_post_zy x y z x_ne_y x_ne_z y_ne_z)
     let proto_lemma_yz :=
-      (O.protoReframe_zx_yx_post_yz x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx_post_yz x y z x_ne_y x_ne_z y_ne_z)
     constructor
     · intro O_zy
       apply proto_sub_reframe z y _ |>.left
       exact proto_lemma_zy.mp O_zy
     · intro reframe_zx
-      let _ := (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).toDecidableRel
+      let _ := (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).toDecidableRel
       apply Decidable.byContradiction
       intro O_nzy
       let proto_nzy := proto_lemma_zy.not.mp O_nzy
@@ -926,14 +988,14 @@ section zx_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).lt z x := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).lt z x := by
     let proto_z_lt_x :=
-      O.protoReframe_zx_yx_post_zx x y z x_neq_y x_neq_z y_neq_z
+      O.protoReframe_zx_yx_post_zx x y z x_ne_y x_ne_z y_ne_z
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z)
     simp [ProtoOrder.lt_def]
     let h := proto_sub_reframe z x proto_z_lt_x.left
     apply And.intro h.left
@@ -943,14 +1005,14 @@ section zx_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
-  : (O.reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z).lt y x := by
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
+  : (O.reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z).lt y x := by
     let proto_y_lt_x :=
-      O.protoReframe_zx_yx_post_yx x y z x_neq_y x_neq_z y_neq_z
+      O.protoReframe_zx_yx_post_yx x y z x_ne_y x_ne_z y_ne_z
     let proto_sub_reframe := Preorder.totalize_subrel
-      (O.protoReframe_zx_yx x y z x_neq_y x_neq_z y_neq_z)
+      (O.protoReframe_zx_yx x y z x_ne_y x_ne_z y_ne_z)
     simp [ProtoOrder.lt_def]
     let h := proto_sub_reframe y x proto_y_lt_x.left
     apply And.intro h.left
@@ -961,24 +1023,24 @@ section zx_yx
     [Finite α]
     (O : Order α)
     (x y z : α)
-    (x_neq_y : x ≠ y)
-    (x_neq_z : x ≠ z)
-    (y_neq_z : y ≠ z)
+    (x_ne_y : x ≠ y)
+    (x_ne_z : x ≠ z)
+    (y_ne_z : y ≠ z)
   : ∃ (O' : Order α),
     (O.le y z ↔ O'.le y z)
     ∧ (O.le z y ↔ O'.le z y)
     ∧ O'.lt z x
     ∧ O'.lt y x
   := by
-    let O' := O.reframe_zx_yx x y z x_neq_y x_neq_z y_neq_z
+    let O' := O.reframe_zx_yx x y z x_ne_y x_ne_z y_ne_z
     exists O'
     constructor
-    · exact O.reframe_zx_yx_post_yz x y z x_neq_y x_neq_z y_neq_z
+    · exact O.reframe_zx_yx_post_yz x y z x_ne_y x_ne_z y_ne_z
     constructor
-    · exact O.reframe_zx_yx_post_zy x y z x_neq_y x_neq_z y_neq_z
+    · exact O.reframe_zx_yx_post_zy x y z x_ne_y x_ne_z y_ne_z
     constructor
-    · exact O.reframe_zx_yx_post_zx x y z x_neq_y x_neq_z y_neq_z
-    · exact O.reframe_zx_yx_post_yx x y z x_neq_y x_neq_z y_neq_z
+    · exact O.reframe_zx_yx_post_zx x y z x_ne_y x_ne_z y_ne_z
+    · exact O.reframe_zx_yx_post_yx x y z x_ne_y x_ne_z y_ne_z
 end zx_yx
 
 
@@ -988,9 +1050,9 @@ end zx_yx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
 --     (h : O.lt z y)
 --   : Preorder α where
 --     le a b :=
@@ -1017,11 +1079,11 @@ end zx_yx
 --     le_refl' a := by
 --       simp [LE.le]
 --       if h_x : a = x then
---         simp [h_x, x_neq_y, x_neq_z]
+--         simp [h_x, x_ne_y, x_ne_z]
 --       else if h_y : a = y then
---         simp [h_x, h_y, x_neq_y.symm, y_neq_z]
+--         simp [h_x, h_y, x_ne_y.symm, y_ne_z]
 --       else if h_z : a = z then
---         simp [h_x, h_y, h_z, x_neq_z.symm, y_neq_z.symm]
+--         simp [h_x, h_y, h_z, x_ne_z.symm, y_ne_z.symm]
 --       else
 --         simp [h_x, h_y, h_z]
 
@@ -1029,9 +1091,9 @@ end zx_yx
 --       simp [LE.le]
 --       if h_ax : a = x then
 --         rw [h_ax]
---         simp [x_neq_y, x_neq_z]
+--         simp [x_ne_y, x_ne_z]
 --         if h_bx : b = x then
---           simp [h_bx, x_neq_z, x_neq_y]
+--           simp [h_bx, x_ne_z, x_ne_y]
 --         else if h_by : b = y then
 --           simp [h_bx, h_by]
 --         else if h_bz : b = z then
@@ -1042,21 +1104,21 @@ end zx_yx
 --           let _ := h_bx x_eq_b.symm
 --           contradiction
 --       else if h_ay : a = y then
---         simp [h_ax, h_ay, x_neq_y, x_neq_y.symm, x_neq_z, y_neq_z]
+--         simp [h_ax, h_ay, x_ne_y, x_ne_y.symm, x_ne_z, y_ne_z]
 --         split
 --         case inl h_bz =>
 --           rw [h_bz]
---           simp [y_neq_z.symm]
+--           simp [y_ne_z.symm]
 --           split
 --           case inl h_cy =>
 --             rw [h_cy]
---             simp [y_neq_z]
+--             simp [y_ne_z]
 --           case inr h_cy =>
---             simp [x_neq_z.symm]
+--             simp [x_ne_z.symm]
 --             split
 --             case inl h_cx =>
 --               rw [h_cx]
---               simp [x_neq_z]
+--               simp [x_ne_z]
 --             case inr h_cx =>
 --               split
 --               · intros ; assumption
@@ -1069,7 +1131,7 @@ end zx_yx
 --           split
 --           case inl h_bx =>
 --             rw [h_bx]
---             simp [x_neq_y, x_neq_z]
+--             simp [x_ne_y, x_ne_z]
 --             split ; intro ; contradiction
 --             split ; intro ; contradiction
 --             intro h_xc
@@ -1077,32 +1139,32 @@ end zx_yx
 --           case inr h_bx =>
 --             intro h_yb
 --             rw [h_yb.symm]
---             simp [x_neq_y.symm]
+--             simp [x_ne_y.symm]
 --       else if h_az : a = z then
 --         rw [h_az]
---         simp [y_neq_z.symm]
+--         simp [y_ne_z.symm]
 --         if h_bx : b = x then
---           simp [h_az, h_bx, x_neq_z, x_neq_y]
+--           simp [h_az, h_bx, x_ne_z, x_ne_y]
 --           split ; intro ; contradiction
 --           split ; intro ; contradiction
---           intro h ; rw [← h] ; simp [x_neq_z]
+--           intro h ; rw [← h] ; simp [x_ne_z]
 --         else if h_by : b = y then
---           simp [h_bx, h_by, y_neq_z, x_neq_y.symm, y_neq_z.symm, x_neq_z.symm]
+--           simp [h_bx, h_by, y_ne_z, x_ne_y.symm, y_ne_z.symm, x_ne_z.symm]
 --           intro z_le_x
 --           simp [z_le_x]
 --           split
 --           case inl h_cz =>
---             simp [h_cz, y_neq_z.symm]
+--             simp [h_cz, y_ne_z.symm]
 --           case inr h_cz =>
 --             split
 --             case inl h_cx =>
---               rw [h_cx] ; simp [x_neq_y]
+--               rw [h_cx] ; simp [x_ne_y]
 --             case inr h_cx =>
 --               intro h_yc
 --               rw [← h_yc]
 --               simp
 --         else if h_bz : b = z then
---           simp [h_bx, h_by, h_bz, y_neq_z.symm]
+--           simp [h_bx, h_by, h_bz, y_ne_z.symm]
 --         else
 --           simp [h_bx, h_by, h_bz]
 --           intro h_zb
@@ -1118,74 +1180,74 @@ end zx_yx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.le y z ↔ (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).le y z) := by
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.le y z ↔ (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).le y z) := by
 --     simp [Preorder.toProtoOrder]
 
 --   theorem Order.protoReframe_zx_xy_post_zy
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.le z y ↔ (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).le z y) := by
---     simp [Preorder.toProtoOrder, y_neq_z.symm]
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.le z y ↔ (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).le z y) := by
+--     simp [Preorder.toProtoOrder, y_ne_z.symm]
 
 --   theorem Order.protoReframe_zx_xy_post_zx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).lt z x := by
---     simp [Preorder.toProtoOrder, x_neq_y, y_neq_z.symm, x_neq_z]
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).lt z x := by
+--     simp [Preorder.toProtoOrder, x_ne_y, y_ne_z.symm, x_ne_z]
 
 --   theorem Order.protoReframe_zx_xy_post_yx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).lt y x := by
---     simp [Preorder.toProtoOrder, x_neq_z, y_neq_z, x_neq_y]
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).lt y x := by
+--     simp [Preorder.toProtoOrder, x_ne_z, y_ne_z, x_ne_y]
 
 --   abbrev Order.reframe_zx_xy
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
 --   : Order α :=
---     O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z
+--     O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z
 --     |>.totalize
 
 --   theorem Order.reframe_zx_xy_post_yz
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.le y z ↔ (O.reframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).le y z) := by
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.le y z ↔ (O.reframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).le y z) := by
 --     -- simp [Order.toPreorder, Preorder.toProtoOrder]
 --     let proto_sub_reframe := Preorder.totalize_subrel
---       (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z)
 --     let proto_lemma_yz :=
---       (O.protoReframe_zx_xy_post_yz x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy_post_yz x y z x_ne_y x_ne_z y_ne_z)
 --     let proto_lemma_zy :=
---       (O.protoReframe_zx_xy_post_zy x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy_post_zy x y z x_ne_y x_ne_z y_ne_z)
 --     constructor
 --     · intro O_yz
 --       apply proto_sub_reframe y z _ |>.left
 --       exact proto_lemma_yz.mp O_yz
 --     · intro reframe_yz
---       let _ := (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).toDecidableRel
+--       let _ := (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).toDecidableRel
 --       apply Decidable.byContradiction
 --       intro O_nyz
 --       let proto_nyz := proto_lemma_yz.not.mp O_nyz
@@ -1202,23 +1264,23 @@ end zx_yx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.le z y ↔ (O.reframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).le z y) := by
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.le z y ↔ (O.reframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).le z y) := by
 --     -- simp [Order.toPreorder, Preorder.toProtoOrder, reframe]
 --     let proto_sub_reframe := Preorder.totalize_subrel
---       (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z)
 --     let proto_lemma_zy :=
---       (O.protoReframe_zx_xy_post_zy x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy_post_zy x y z x_ne_y x_ne_z y_ne_z)
 --     let proto_lemma_yz :=
---       (O.protoReframe_zx_xy_post_yz x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy_post_yz x y z x_ne_y x_ne_z y_ne_z)
 --     constructor
 --     · intro O_zy
 --       apply proto_sub_reframe z y _ |>.left
 --       exact proto_lemma_zy.mp O_zy
 --     · intro reframe_zx
---       let _ := (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).toDecidableRel
+--       let _ := (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).toDecidableRel
 --       apply Decidable.byContradiction
 --       intro O_nzy
 --       let proto_nzy := proto_lemma_zy.not.mp O_nzy
@@ -1235,14 +1297,14 @@ end zx_yx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.reframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).lt z x := by
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.reframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).lt z x := by
 --     let proto_z_lt_x :=
---       O.protoReframe_zx_xy_post_zx x y z x_neq_y x_neq_z y_neq_z
+--       O.protoReframe_zx_xy_post_zx x y z x_ne_y x_ne_z y_ne_z
 --     let proto_sub_reframe := Preorder.totalize_subrel
---       (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z)
 --     simp [ProtoOrder.lt_def]
 --     let h := proto_sub_reframe z x proto_z_lt_x.left
 --     apply And.intro h.left
@@ -1252,14 +1314,14 @@ end zx_yx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
---   : (O.reframe_zx_xy x y z x_neq_y x_neq_z y_neq_z).lt y x := by
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
+--   : (O.reframe_zx_xy x y z x_ne_y x_ne_z y_ne_z).lt y x := by
 --     let proto_y_lt_x :=
---       O.protoReframe_zx_xy_post_yx x y z x_neq_y x_neq_z y_neq_z
+--       O.protoReframe_zx_xy_post_yx x y z x_ne_y x_ne_z y_ne_z
 --     let proto_sub_reframe := Preorder.totalize_subrel
---       (O.protoReframe_zx_xy x y z x_neq_y x_neq_z y_neq_z)
+--       (O.protoReframe_zx_xy x y z x_ne_y x_ne_z y_ne_z)
 --     simp [ProtoOrder.lt_def]
 --     let h := proto_sub_reframe y x proto_y_lt_x.left
 --     apply And.intro h.left
@@ -1270,23 +1332,23 @@ end zx_yx
 --     [Finite α]
 --     (O : Order α)
 --     (x y z : α)
---     (x_neq_y : x ≠ y)
---     (x_neq_z : x ≠ z)
---     (y_neq_z : y ≠ z)
+--     (x_ne_y : x ≠ y)
+--     (x_ne_z : x ≠ z)
+--     (y_ne_z : y ≠ z)
 --   : ∃ (O' : Order α),
 --     (O.le y z ↔ O'.le y z)
 --     ∧ (O.le z y ↔ O'.le z y)
 --     ∧ O'.lt z x
 --     ∧ O'.lt y x
 --   := by
---     let O' := O.reframe_zx_xy x y z x_neq_y x_neq_z y_neq_z
+--     let O' := O.reframe_zx_xy x y z x_ne_y x_ne_z y_ne_z
 --     exists O'
 --     constructor
---     · exact O.reframe_zx_xy_post_yz x y z x_neq_y x_neq_z y_neq_z
+--     · exact O.reframe_zx_xy_post_yz x y z x_ne_y x_ne_z y_ne_z
 --     constructor
---     · exact O.reframe_zx_xy_post_zy x y z x_neq_y x_neq_z y_neq_z
+--     · exact O.reframe_zx_xy_post_zy x y z x_ne_y x_ne_z y_ne_z
 --     constructor
---     · exact O.reframe_zx_xy_post_zx x y z x_neq_y x_neq_z y_neq_z
---     · exact O.reframe_zx_xy_post_yx x y z x_neq_y x_neq_z y_neq_z
+--     · exact O.reframe_zx_xy_post_zx x y z x_ne_y x_ne_z y_ne_z
+--     · exact O.reframe_zx_xy_post_yx x y z x_ne_y x_ne_z y_ne_z
 -- end zx_xy
 

@@ -96,6 +96,51 @@ section conditions
         (∀ (x y : S), ∀ (i : chs.Idx),
           chs[i].le x y ↔ (chs'[i].le x y))
         → ((swf chs).sub S).C = ((swf chs').sub S).C
+  
+  theorem Swf.iia_lt
+    (swf : Swf α count)
+    (iia : swf.Iia)
+    (chs chs' : Choices.Ordered α count)
+    (h : ∀ (i : Fin count),
+      (chs[i].le x y ↔ chs'[i].le x y)
+      ∧ (chs[i].le y x ↔ chs'[i].le y x))
+  : (swf chs).lt x y → (swf chs').lt x y := by
+    intro chs_x_lt_y
+    let S : Set α :=
+      {x, y}
+    let x_in_S : x ∈ S :=
+      Set.mem_insert x {y}
+    let y_in_S : y ∈ S :=
+      Set.mem_insert_iff.mp (Or.inr $ Set.mem_singleton y)
+    let C_eq_C' :=
+      iia chs chs' S
+        (by
+          simp [Preorder.le_refl]
+          exact ⟨fun i => h i |>.left, fun i => h i |>.right⟩)
+
+    let sub := (swf chs).sub S
+    let _ := (swf chs).toLE
+
+    let x_in_C : ⟨x, x_in_S⟩ ∈ sub.C := by
+      rw [sub |>.C_def]
+      simp [Preorder.le_refl]
+      exact chs_x_lt_y.left
+    let y_notin_C : ⟨y, y_in_S⟩ ∉ sub.C := by
+      rw [sub |>.C_def]
+      simp [Preorder.le_refl]
+      exact chs_x_lt_y.right
+    let x_in_C' := C_eq_C' ▸ x_in_C
+    let y_notin_C' := C_eq_C' ▸ y_notin_C
+
+    constructor
+    · exact x_in_C' ⟨y, y_in_S⟩
+    · intro y_le_x
+      let sub' := (swf chs').sub S
+      let _ := (swf chs').toLE
+      apply y_notin_C'
+      rw [sub'.C_def]
+      simp [Preorder.le_refl]
+      exact y_le_x
 
   /-- `N`on-`di`ctatorship. -/
   abbrev Swf.Ndi

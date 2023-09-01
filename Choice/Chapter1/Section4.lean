@@ -1711,3 +1711,67 @@ theorem lemma_1_i
     apply ProtoOrder.subrel_trans _ C'_O
     apply Preorder.extended_subrel
     apply P'.totalize_subrel
+
+
+
+section genLt
+  variable
+    {α : Type u}
+    [Finite α]
+    [DecidableEq α]
+    {a b : α}
+
+  def ProtoOrder.genLt (_a_ne_b : a ≠ b) : ProtoOrder α where
+    le x y :=
+      (x = a ∧ y = b) ∨ x = y
+    toDecidableRel := by
+      simp [DecidableRel]
+      exact inferInstance
+    toDecidableEq :=
+      inferInstance
+
+  def ProtoOrder.genLt_post {a_ne_b : a ≠ b} : ProtoOrder.genLt a_ne_b |>.lt a b := by
+    simp [ProtoOrder.genLt]
+    intro h
+    cases h with
+    | inl h =>
+      rw [h.left] at a_ne_b
+      contradiction
+    | inr h =>
+      rw [h] at a_ne_b
+      contradiction
+
+  def Preorder.genLt (a_ne_b : a ≠ b) : Preorder α where
+    toProtoOrder := ProtoOrder.genLt a_ne_b
+    le_refl' x := by
+      simp [ProtoOrder.toLE, LE.le, ProtoOrder.genLt]
+    le_trans' x y z := by
+      simp [ProtoOrder.toLE, LE.le, ProtoOrder.genLt]
+      intro h h'
+      cases h <;> cases h'
+      case inl.inl h h' =>
+        exact Or.inl ⟨h.left, h'.right⟩
+      case inr.inr h h' =>
+        simp [h, h']
+      case inl.inr h h' =>
+        rw [← h', h.left, h.right]
+        exact Or.inl ⟨rfl, rfl⟩
+      case inr.inl h h' =>
+        rw [h, h'.left, h'.right]
+        exact Or.inl ⟨rfl, rfl⟩
+
+  def Preorder.genLt_post (a_ne_b : a ≠ b) : Preorder.genLt a_ne_b |>.lt a b :=
+    ProtoOrder.genLt_post
+
+  def Order.genLt (a_ne_b : a ≠ b) : Order α :=
+    let P := Preorder.genLt a_ne_b
+    P.totalize
+  
+  -- set_option pp.notation false in
+  -- set_option pp.explicit true in
+  theorem Order.genLt_post (a_ne_b : a ≠ b) : (Order.genLt a_ne_b).lt a b := by
+    let ⟨a_le_b, h⟩ :=
+      (Preorder.genLt a_ne_b).totalize_subrel a b (Preorder.genLt_post a_ne_b).left
+    constructor ; exact a_le_b
+    exact h (Preorder.genLt_post a_ne_b).right
+end genLt

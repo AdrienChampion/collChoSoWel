@@ -9,8 +9,7 @@ namespace Choice
 /-! ## Aggregating individual choices -/
 
 structure Choices (O : Type u) (count : ℕ) where
-  choices : Array O
-  inv : count = choices.size
+  choices : Fin count → O
 
 @[simp]
 protected abbrev Choices.count (_ : Choices O count) :=
@@ -40,30 +39,16 @@ section
   abbrev Choices.Idx (_ : Choices O count) :=
     Fin count
 
-  def Choices.invariant :=
-    chs.inv
-
-  def Choices.get (idx : chs.Idx) : O :=
-    let ⟨i, h_i⟩ := idx
-    let _ : i < chs.choices.size := by
-      rw [← chs.inv]
-      exact h_i
-    chs.choices[i]
-
-  instance (chs : Choices O count) : Coe (Fin chs.choices.size) chs.Idx where
-    coe i := by
-      let ⟨i, h_i⟩ := i
-      exact ⟨i, chs.inv ▸ h_i⟩
+  abbrev Choices.get (idx : chs.Idx) : O :=
+    chs.choices idx
 
   instance : GetElem (Choices O count) Nat O (fun chs idx => idx < chs.count) where
     getElem chs idx idx_lt_count :=
       chs.get ⟨idx, idx_lt_count⟩
 
-  instance : GetElem (Choices O count) (Fin count) O (fun chs _ => count ≤ chs.count) where
-    getElem chs idx count_le_count :=
-      let legit : idx.1 < chs.count :=
-        Nat.lt_of_lt_of_le idx.2 count_le_count
-      chs.get ⟨idx.1, legit⟩
+  instance : GetElem (Choices O count) (Fin count) O (fun _ _ => True) where
+    getElem chs idx _ :=
+      chs.get idx
 
   section
     variable
@@ -84,18 +69,16 @@ section
     variable
       (f : chs.Idx → O → O')
 
-    def Choices.map : Choices O' count := {
-      choices :=
-        chs.choices.mapIdx (fun idx o => f idx o)
-      inv := by
-        simp [Array.size_mapIdx, chs.inv]
-    }
+    def Choices.map : Choices O' count where
+      choices idx :=
+        f idx (chs.choices idx)
 
     def Choices.get_map
       (i : chs.Idx)
     : (chs.map f).get i = f i (chs.get i)
     := by
-      simp [map, get, invariant]
+      simp [map, get]
+
     def Choices.getElem_map
       (i : chs.Idx)
     : (chs.map f)[i] = f i chs[i]

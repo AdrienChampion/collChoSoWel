@@ -722,6 +722,39 @@ section sub
     {y_in_S : y ∈ S}
   : (P.sub S).le ⟨x, x_in_S⟩ ⟨y, y_in_S⟩ ↔ P.le x y := by
     simp [LE.le]
+  
+  theorem Preorder.sub_pair_le_subst
+    {P₁ P₂ : Preorder α}
+    {x y : α}
+    (C₁_eq_C₂ : (P₁.sub {x, y}).C = (P₂.sub {x, y}).C)
+    (x_le₁_y : P₁.le x y)
+  : P₂.le x y := by
+    let x_in_S : x ∈ {x, y} := Set.mem_insert x {y}
+    let x_in_C₁ : ⟨x, x_in_S⟩ ∈ (P₁.sub {x, y}).C := by
+      simp [ProtoOrder.C_def, LE.le, P₁.le_refl]
+      exact x_le₁_y
+    let x_in_C₂ := C₁_eq_C₂ ▸ x_in_C₁
+    simp [ProtoOrder.C_def] at x_in_C₂
+    exact x_in_C₂
+  
+  theorem Preorder.sub_pair_lt_subst
+    {P₁ P₂ : Preorder α}
+    {x y : α}
+    (C₁_eq_C₂ : (P₁.sub {x, y}).C = (P₂.sub {x, y}).C)
+    (x_lt₁_y : P₁.lt x y)
+  : P₂.lt x y := by
+    let x_in_S : x ∈ {x, y} := Set.mem_insert x {y}
+    let y_in_S : y ∈ {x, y} := Set.mem_insert_iff.mpr $ Or.inr (Set.mem_singleton y)
+    let x_in_C₁ : ⟨x, x_in_S⟩ ∈ (P₁.sub {x, y}).C := by
+      simp [ProtoOrder.C_def, LE.le, P₁.le_refl]
+      exact x_lt₁_y.left
+    let y_notin_C₁ : ⟨y, y_in_S⟩ ∉ (P₁.sub {x, y}).C := by
+      simp [ProtoOrder.C_def, LE.le, P₁.le_refl]
+      exact x_lt₁_y.right
+    let x_in_C₂ := C₁_eq_C₂ ▸ x_in_C₁
+    let y_notin_C₂ := C₁_eq_C₂ ▸ y_notin_C₁
+    simp [ProtoOrder.C_def] at x_in_C₂ y_notin_C₂
+    exact ⟨x_in_C₂, y_notin_C₂⟩
 
   abbrev QPreorder.sub (P : QPreorder α) (S : Set α) : QPreorder S :=
     let sub := P.toProtoOrder.sub S
