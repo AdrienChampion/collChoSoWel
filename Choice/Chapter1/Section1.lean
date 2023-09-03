@@ -2,7 +2,29 @@ import Choice.Init
 
 
 
-/-! # Section 1.1 -/
+/-! # Section 1.1
+
+This section is all about laying down the foundation for what comes next. It's all about order
+relations, more precisely about an abstract relation `≤ : α → α → Prop` (`R` in Sen's book) that
+defines two other:
+
+- `a < b ≝ a ≤ b ∧ ¬ b ≤ a` --- `P` in Sen's book;
+- `a ≈ b ≝ a ≤ b ∧ b ≤ a` --- `I` in Sen's book.
+
+In a collective choice setting, we can see these three relation as stating
+
+- `a ≤ b`: some aspects of `a` are better than `b`;
+- `a < b`: `a` is prefered to `b`;
+- `a ≈ b`: indifference between `a` and `b`.
+
+Note that the semantics of these relation are somewhat counter-intuitive: `a ≤ b`/`a < b` means
+(roughly) that `a` is *"better"* than `b`, though it reads as *less-than*.
+
+There are a couple assumptions we carry throughout, in particular that both `=` and `≤` must be
+decidable over `α`. Note that the latter implies that `<` and `≈` are also decidable. To forget
+about these assumptions, we define custom classes for pre-orders, orders... so that they just
+carry (and expose) the decidability properties for us.
+-/
 namespace Choice
 
 
@@ -12,7 +34,7 @@ namespace Choice
 A proto-order over some domain `α` is a decidable relation `≤ : α → α → Prop`, where `α`-equality is
 decidable. It provides two (decidable) relations:
 
-- `a < b = a ≤ b ∧ ¬ b ≤ a` --- always irreflexive,
+- `a < b = a ≤ b ∧ ¬ b ≤ a` --- always irreflexive;
 - `a ≈ b = a ≤ b ∧ b ≤ a`.
 -/
 section proto_order
@@ -62,6 +84,7 @@ section proto_order
     abbrev ProtoOrder.I := @Choice.I
   end
 
+  /-! ### A few properties over proto-order relations. -/
   section
     variable (P : ProtoOrder α)
 
@@ -77,19 +100,19 @@ section proto_order
     abbrev ProtoOrder.equiv_def {a b} :=
       P.equiv_def' a b
     
-    def ProtoOrder.lt_intro
+    theorem ProtoOrder.lt_intro
       {a b : α} (ab : a ≤ b) (nba : ¬ b ≤ a)
     : a < b := by
       simp [P.lt_def]
       exact ⟨ab, nba⟩
     
-    def ProtoOrder.equiv_intro
+    theorem ProtoOrder.equiv_intro
       {a b : α} (ab : a ≤ b) (ba : b ≤ a)
     : a ≈ b := by
       simp [P.equiv_def]
       exact ⟨ab, ba⟩
 
-    def ProtoOrder.not_lt'
+    theorem ProtoOrder.not_lt'
       [T : IsTotal α LE.le]
     : ∀ (a b : α), ¬ a < b → b ≤ a := by
       intro a b
@@ -103,24 +126,24 @@ section proto_order
       | inr ab =>
         assumption
     
-    def ProtoOrder.not_lt
+    theorem ProtoOrder.not_lt
       [IsTotal α LE.le]
     : ∀ {a b : α}, ¬ a < b → b ≤ a :=
       fun {a b} => P.not_lt' a b
 
-    def ProtoOrder.lt_asymm'
+    theorem ProtoOrder.lt_asymm'
     : ∀ (a b : α), a < b → ¬ b < a := by
       simp [LT.lt]
       intro a b ab _ _
       assumption
 
-    def ProtoOrder.lt_asymm {a b : α} :=
+    theorem ProtoOrder.lt_asymm {a b : α} : a < b → ¬ b < a :=
       P.lt_asymm' a b
   end
 
 
 
-  /-! Useful instances. -/
+  /-! ### Useful instances -/
   section
     variable
       [P : ProtoOrder α]
@@ -180,7 +203,11 @@ end proto_order
 /-! ## Quasi-Transitivity
 
 The book introduces a notion of *"quasi-transitivity"*, which corresponds to transitivity over `<`.
-Since `<` is called `P` in the book, this notion is also called *"PP transitivity"*.
+This notion is also called *"PP transitivity"* because, with Sen's notation, it is written `a P b →
+b P c → a P c`.
+
+Quasi-transitivity is not discussed until *Chapter 2* in the book; it appears here so that we can
+define a neat order hierarchy that includes quasi-transitivity.
 -/
 section pp_trans
   @[simp]
@@ -201,7 +228,11 @@ end pp_trans
 
 /-! ## PI-Transitivity
 
-Similar to but different from quasi-transitivity, corresponds to `a < b → b ≈ c → a < c`.
+Similar to but different from quasi-transitivity, corresponds to `a < b → b ≈ c → a < c`. With Sen's
+notation we get `a P b → b I c → a P c`, hence the name *PI-transitivity*. We will later also have
+*IP-transitivity* and *II-transitivity*.
+
+TODO: probably define IP/II-transitivity here.
 -/
 section pi_trans
   variable
@@ -214,19 +245,13 @@ section pi_trans
     pi_trans : PiTransitive α
 end pi_trans
 
--- instance [P : ProtoOrder α] [IsTrans α LE.le] : IsPiTrans α where
---   pi_trans := by
---     intro a b c
---     rw [P.lt_def, P.lt_def, P.equiv_def]
---     intro h
---     cases h with | intro ab nba =>
---     intro h
---     cases h with | intro bc cb =>
-    
---     sorry
 
 
+/-! ## Quasi-preorder
 
+A `ProtoOrder` where `≤` is reflexive and `<` is transitive, *i.e.* the proto-order is
+quasi-transitive.
+-/
 section qpreorder
   class QPreorder (α : Type u) extends ProtoOrder α where
     le_refl' : Reflexive le
@@ -257,9 +282,8 @@ end qpreorder
 
 /-! ## Preorder
 
-A preorder is a proto-order such that `≤` is reflexive and transitive. Logically however, a preorder
-is also a quasi-preorder, so it `Coe`-s to `QPreorder` and generates a `QPreorder` instance
-automatically.
+A preorder is a proto-order such that `≤` is reflexive and transitive. So a preorder is also a
+quasi-preorder, thus it `Coe`-s to `QPreorder` and generates a `QPreorder` instance automatically.
 
 Note that our custom notion of preorder is compatible with Mathlib's version, which we prove by
 generating a `_root_.Preorder` instance below.
@@ -324,7 +348,7 @@ end preorder
 
 /-! ## Quasi-Order
 
-A quasi-order is a quasi-preorder where `≤` is total.
+A quasi-order is a `QPreorder` where `≤` is total.
 -/
 section qorder
   class QOrder (α : Type u) extends QPreorder α where
@@ -344,9 +368,9 @@ end qorder
 
 /-! ## Order
 
-An order is a preorder where `≤` is total. Logically however, an order is also a quasi-order, so it
-`Coe`-s to `QOrder` and generates a `QOrder` instance automatically. `Order` still `Coe`-s to
-`Preorder` though, because `QOrder` does not imply `Preorder`.
+An order is a preorder where `≤` is total. So an order is also a quasi-order, thus it `Coe`-s to
+`QOrder` and generates a `QOrder` instance automatically. `Order` still `Coe`-s to `Preorder`
+though, because `QOrder` does not imply `Preorder`.
 -/
 section order
   class Order (α : Type u) extends Preorder α where
