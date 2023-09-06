@@ -2,10 +2,17 @@ import Choice.Chapter1.Section4
 
 
 
+/-! # Section 5
+
+Introduces
+
+- choice functions `ProtoOrder.ChoiceFun`;
+-/
 namespace Choice
 
 
 
+/-! ## Definition `1*8` -/
 section def_1_8
   /-- True if every non-empty subset of `α` has a non-empty choice set. -/
   def ProtoOrder.ChoiceFun
@@ -145,39 +152,26 @@ end def_1_8
 
 
 
-theorem lemma_1_j
-  (O : Order α)
-  [Finite α]
-: O.ChoiceFunFin :=
-  O.choiceFunFin
+/-! ## Lemmas -/
+section lemmas
+  theorem lemma_1_j
+    (O : Order α)
+    [Finite α]
+  : O.ChoiceFunFin :=
+    O.choiceFunFin
 
-
-theorem lemma_1_k
-  (Q : QOrder α)
-  [Finite α]
-: Q.ChoiceFunFin :=
-  Q.choiceFunFin
-
-
-
-/-! We're skipping `lemma_1_l` as it's messy to prove with the current architecture and it does not
-seem to be used a whole lot after it's proved. -/
+  theorem lemma_1_k
+    (Q : QOrder α)
+    [Finite α]
+  : Q.ChoiceFunFin :=
+    Q.choiceFunFin
+end lemmas
 
 
 
-theorem Preorder.best_equiv
-  [P : Preorder α]
-  {b₁ : α}
-: b₁ ∈ P.C → (∀ {b₂}, b₂ ∈ P.C ↔ b₁ ≈ b₂) := by
-  intro C_b₁ b₂
-  constructor
-  · intro C_b₂
-    rw [P.equiv_def]
-    constructor
-    · apply C_b₁ b₂
-    · apply C_b₂ b₁
-  · rw [P.equiv_def]
-    intro b₁_equiv_b₂
-    intro a
-    let b₁_le_a := C_b₁ a
-    apply P.le_trans b₁_equiv_b₂.right b₁_le_a
+/-! ## Lemma `1*l`
+
+We're skipping `lemma_1_l` as it's messy to prove with the current architecture and it does not seem
+to be used a whole lot after it's proved.
+-/
+

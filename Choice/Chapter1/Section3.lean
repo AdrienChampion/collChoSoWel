@@ -2,12 +2,15 @@ import Choice.Chapter1.Section2
 
 
 
-/-! # Section 1.3 -/
+/-! # Section 1.3
+
+Here we start proving a few lemmas based on everything we defined so far.
+-/
 namespace Choice
 
 
 
-/-! ### Lemma `1*a` -/
+/-! ## Lemma `1*a` -/
 namespace lemma_1_a
   variable
     [R : Preorder α]
@@ -36,7 +39,7 @@ end lemma_1_a
 
 
 
-/-! ### Lemma `1*b` -/
+/-! ## Lemma `1*b` -/
 section lemma_1_b
   /- Lemma 1.b.
   
@@ -78,6 +81,7 @@ end lemma_1_b
 
 
 
+/-! ## Lemma `1*c` -/
 section lemma_1_c
   theorem lemma_1_c'
     [R : Preorder α]
@@ -154,6 +158,7 @@ end lemma_1_c
 
 
 
+/-! ## Lemma `1*d` -/
 section lemma_1_d
   /-- Lemma 1.d. -/
   theorem lemma_1_d
@@ -199,6 +204,7 @@ end lemma_1_d
 
 
 
+/-! ## Lemma `1*e` -/
 section lemma_1_e
   theorem lemma_1_e_mp
     [R : Preorder α] [F : Finite α] [I : Inhabited α]

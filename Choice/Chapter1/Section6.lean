@@ -2,6 +2,11 @@ import Choice.Chapter1.Section5
 
 
 
+/-! # Section 6
+
+Introduces properties `α` and `β` for choice functions. We define these properties directly on
+`ProtoOrder`s, seen as the result of applying the choice function.
+-/
 namespace Choice
 
 

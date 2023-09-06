@@ -2,11 +2,25 @@ import Choice.Chapter1.Section3
 
 
 
-/-! # Section 1.4 -/
+/-! # Section 1.4
+
+Introduces the notions of *"subrelation"*, *"compatibility"* and *"semi-subrelation"*. The latter is
+not in Sen's book and relates an `Order` and a `Preorder`. It is actually split in two,
+`Preorder.semiSubrel` and `Preorder.semiSubrel'`.
+
+Both will be useful to build an order `O` from a preorder `P` such that `P` is a subrelation of `O`,
+and prove it correct. All of this is to prove lemma `1*f`. The process of producing `O` is called
+*"totalization"* below.
+
+We also define a notion of `Complement` for a preorder `P`, which is an order over a `S : Set α`.
+Complements can guide totalization by specifying relations where `P` does not, meaning `S` must be
+such that `∀ (a b : S), P.le a b → a = b`. This lets us prove lemma `1*h`.
+-/
 namespace Choice
 
 
 
+/-! ## Preorder subrelation and semi-subrelation -/
 section subrelation
   @[simp]
   abbrev Preorder.semiSubrel {S : Set α} (O : Order S) (P : Preorder α) : Prop :=
@@ -78,15 +92,30 @@ end subrelation
 
 
 
+/-! ## Totalization -/
 section
   variable
     {α : Type u}
     [P : Preorder α]
-  
+
+  /-- This type encodes relations between elements that `P` cannot compare.
+
+  The actual totalizer type is `Preorder.Totalizer` below, which stores a value of this type along
+  with a proof that the relations it adds are new and legal using `Preorder.Totalizer.Raw.Legit`.
+  -/
   inductive Preorder.Totalizer.Raw (P : Preorder α)
+  /-- Initial state of the totalization process, no relation has been added. -/
   | root : Totalizer.Raw P
-  | cons (le_a : List α) (a b : α) (b_le : List α)
-    : Totalizer.Raw P → Totalizer.Raw P
+  /-- Addition of new relations for a pair `(a, b)` incomparable in `P`.
+
+  - `le_a` is the list of all elements `x : α` such that `sub.le x a`, **including** `a`;
+  - `le_b` is th elist of all elements `y : α` such that `sub.le b y`, **including** `b`.
+
+  The additional relations encoded by this constructor are all `x ≤ y` with `x ∈ le_a` and `y ∈
+  le_b`. Currently, storing `a` and `b` is not necessary and just shows which incomparable pair
+  in `sub` served as the starting point for adding all these relations.
+  -/
+  | cons (le_a : List α) (a b : α) (b_le : List α) (sub : Totalizer.Raw P) : Totalizer.Raw P
 
   @[simp]
   abbrev Preorder.Totalizer.Raw.leB : Totalizer.Raw P → α → α → Bool
@@ -98,8 +127,14 @@ section
   abbrev Preorder.Totalizer.Raw.le (self : Totalizer.Raw P) : α → α → Prop :=
     (leB self · ·)
 
+  /-- Companion proof-type for `Totalizer.Raw`.
+
+  Encodes the properties we need over the raw totalizer.
+  -/
   inductive Preorder.Totalizer.Raw.Legit : Totalizer.Raw P → Prop
+  /-- Initial state, no new relations, nothing to prove. -/
   | root : Legit Raw.root
+  /-- Properties that a raw totalizer `cons`tructor must verify. -/
   | cons (le_a : List α) (a b : α) (b_le : List α) sub :
     ¬ sub.le a b
     → (∀ c, c ∈ le_a ↔ sub.le c a)
@@ -153,7 +188,14 @@ section
       case inr.inr sub_ab sub_bc =>
         exact ih legit_sub sub_ab sub_bc |> Or.inr
     
-  /-- TODO: optimize the proofs in here it's terrible -/
+  /-- Extends a preorder over `S : Set α` to a preorder over `α` by adding `a ≤ a` for `a ∉ S`.
+
+  This is going to be useful to express that a `Complement S` is a subrelation of an `Order α`.
+  Since a complement only deals with elements in `S : Set α`, we need to extend it to obtain a
+  `Preorder α` which we is the actual subrelation of the `Order α`.
+
+  TODO: optimize the proofs in here it's terrible.
+  -/
   abbrev Preorder.extended
     {S : Set α}
     [decMemS : ∀ a, Decidable (a ∈ S)]
@@ -310,13 +352,27 @@ section
 
 
 
-
+  /-! ### Complement of a preorder -/
   section complement
+    /-- An order over some `S : Set α` such that the elements of `S` are incomparable by `P`. -/
     structure Preorder.Complement (P : Preorder α) where
+      /-- Set of incomparable elements. -/
       Incmp : Set α
+      /-- `Incmp` membership is decidable. -/
       decMem : ∀ a, Decidable (a ∈ Incmp)
+      /-- Elements of `Incmp` are incomparable. -/
       isIncmp : ∀ a b, a ∈ Incmp → b ∈ Incmp → (P.le a b ↔ a = b)
+      /-- Order over `Incmp`. -/
       Ord : Order Incmp
+
+    def Preorder.Complement.empty (P : Preorder α) : P.Complement where
+      Incmp := ∅
+      decMem a := by
+        apply isFalse
+        simp
+      isIncmp := by
+        simp
+      Ord := P.subEmpty
 
     instance {C : P.Complement} {a : α} : Decidable (a ∈ C.Incmp) :=
       C.decMem a
@@ -421,6 +477,13 @@ section
   end complement
 
 
+
+  /-! ## Preorder totalization proper
+
+  Sen first shows that a preorder can be "totalized" into an order it is a subrelation of, and then
+  shows that, in addition, you can specify what happens on incomparable elements by providing what
+  we named `Complement`.
+  -/
 
   structure Preorder.Totalizer (P : Preorder α) where
     raw : Totalizer.Raw P
@@ -560,237 +623,242 @@ section
 
 
 
-  def Preorder.Totalizer.leClosure
-    (self : P.Totalizer) [F : Finite α] (a : α) (above : Bool)
-  : List α :=
-    aux F.elems
-  where aux : List α → List α
-    | [] => []
-    | b::rest =>
-      if above ∧ self.le a b
-      then b :: (aux rest)
-      else if ¬ above ∧ self.le b a
-      then b :: (aux rest)
-      else aux rest
+  /-! ## Computes the `≤`-closure below/above an element -/
+  section leClosure
+    /-- Computes all the `x : α` such that `a ≤ x` if `above`, and `x ≤ a` `¬above`. -/
+    def Preorder.Totalizer.leClosure
+      (self : P.Totalizer) [F : Finite α] (a : α) (above : Bool)
+    : List α :=
+      aux F.elems
+    where aux : List α → List α
+      | [] => []
+      | b::rest =>
+        if above ∧ self.le a b
+        then b :: (aux rest)
+        else if ¬ above ∧ self.le b a
+        then b :: (aux rest)
+        else aux rest
 
-  theorem Preorder.Totalizer.leClosure.aux_in_list
-    (self : P.Totalizer)
-    {a : α} {l : List α} {above : Bool}
-  : ∀ b ∈ aux self a above l, b ∈ l := by
-    induction l with
-    | nil =>
-      intros
-      contradiction
-    | cons hd tl ih =>
-      intro b
-      simp only [aux]
-      split
-      case inl h =>
-        intro b_in_res
-        cases b_in_res ; exact List.Mem.head tl
-        case tail b_in_sub =>
-        let ⟨h_above, _⟩ := h
-        simp [aux, h_above]
-        · right
-          apply ih
-          assumption
-      case inr h =>
-        simp at h
+    theorem Preorder.Totalizer.leClosure.aux_in_list
+      (self : P.Totalizer)
+      {a : α} {l : List α} {above : Bool}
+    : ∀ b ∈ aux self a above l, b ∈ l := by
+      induction l with
+      | nil =>
+        intros
+        contradiction
+      | cons hd tl ih =>
+        intro b
+        simp only [aux]
         split
-        · intro b_in_res
+        case inl h =>
+          intro b_in_res
           cases b_in_res ; exact List.Mem.head tl
           case tail b_in_sub =>
-          apply List.Mem.tail
-          apply ih _ b_in_sub
-        · intro b_in_res
-          apply List.Mem.tail
-          apply ih _ b_in_res
-
-
-
-  section above
-    theorem Preorder.Totalizer.leClosure.aux_above_post_mp
-      (self : P.Totalizer)
-      {a : α} {l : List α}
-    : ∀ b ∈ aux self a true l, self.le a b := by
-      induction l with
-      | nil =>
-        intro b _
-        contradiction
-      | cons hd tl ih =>
-        simp [aux]
-        split
-        case inl h =>
-          intro b b_in_res
-          cases b_in_res with
-          | head tl => exact h
-          | tail hd b_in_tl =>
-            exact ih b b_in_tl
+          let ⟨h_above, _⟩ := h
+          simp [aux, h_above]
+          · right
+            apply ih
+            assumption
         case inr h =>
-          exact ih
-
-    theorem Preorder.Totalizer.leClosure.aux_above_post_mpr
-      (self : P.Totalizer)
-      {a : α} {l : List α}
-    : ∀ b ∈ l, self.le a b → b ∈ aux self a true l := by
-      induction l with
-      | nil =>
-        intro b _
-        contradiction
-      | cons hd tl ih =>
-        simp only [aux]
-        split
-        case inl h =>
-          intro b b_in_res
-          cases b_in_res with
-          | head tl =>
-            intro
-            exact List.Mem.head _
-          | tail hd b_in_tl =>
-            intro h
-            let b_in_sub := ih b b_in_tl h
-            exact List.Mem.tail _ b_in_sub
-        case inr h =>
-          simp only [not_and_or, false_or] at h
-          intro b b_in_l h_b
-          simp
-          cases b_in_l with
-          | head _ => contradiction
-          | tail _ h =>
-            exact ih b h h_b
-
-    theorem Preorder.Totalizer.leClosure_above_post_mp
-      [Finite α]
-      (self : P.Totalizer)
-      {a : α}
-    : ∀ b ∈ self.leClosure a true, self.le a b :=
-      leClosure.aux_above_post_mp self
-
-    theorem Preorder.Totalizer.leClosure_above_post_mpr
-      [F : Finite α]
-      (self : P.Totalizer)
-      {a : α}
-    : ∀ b, self.le a b → b ∈ self.leClosure a true :=
-      fun b h_b =>
-        Totalizer.leClosure.aux_above_post_mpr self b (F.all_in_elems b) h_b
-
-    @[simp]
-    theorem Preorder.Totalizer.leClosure_above_post
-      [Finite α]
-      (self : P.Totalizer)
-      {a : α}
-    : ∀ b, b ∈ self.leClosure a true ↔ self.le a b :=
-      fun b => ⟨
-        self.leClosure_above_post_mp b,
-        self.leClosure_above_post_mpr b
-      ⟩
-  end above
+          simp at h
+          split
+          · intro b_in_res
+            cases b_in_res ; exact List.Mem.head tl
+            case tail b_in_sub =>
+            apply List.Mem.tail
+            apply ih _ b_in_sub
+          · intro b_in_res
+            apply List.Mem.tail
+            apply ih _ b_in_res
 
 
 
-  section below
-    theorem Preorder.Totalizer.leClosure.aux_below_post_mp
-      (self : P.Totalizer)
-      {a : α} {l : List α}
-    : ∀ b ∈ aux self a false l, self.le b a := by
-      induction l with
-      | nil =>
-        intro b _
-        contradiction
-      | cons hd tl ih =>
-        simp [aux]
-        split
-        case inl h =>
-          intro b b_in_res
-          cases b_in_res with
-          | head tl => exact h
-          | tail hd b_in_tl =>
-            exact ih b b_in_tl
-        case inr h =>
-          exact ih
+    section above
+      theorem Preorder.Totalizer.leClosure.aux_above_post_mp
+        (self : P.Totalizer)
+        {a : α} {l : List α}
+      : ∀ b ∈ aux self a true l, self.le a b := by
+        induction l with
+        | nil =>
+          intro b _
+          contradiction
+        | cons hd tl ih =>
+          simp [aux]
+          split
+          case inl h =>
+            intro b b_in_res
+            cases b_in_res with
+            | head tl => exact h
+            | tail hd b_in_tl =>
+              exact ih b b_in_tl
+          case inr h =>
+            exact ih
 
-    theorem Preorder.Totalizer.leClosure.aux_below_post_mpr
-      (self : P.Totalizer)
-      {a : α} {l : List α}
-    : ∀ b ∈ l, self.le b a → b ∈ aux self a false l := by
-      induction l with
-      | nil =>
-        intro b _
-        contradiction
-      | cons hd tl ih =>
-        simp only [aux]
-        split
-        case inl h =>
-          intro b b_in_res
-          cases b_in_res with
-          | head tl =>
-            intro
-            exact List.Mem.head _
-          | tail hd b_in_tl =>
-            intro h
-            let b_in_sub := ih b b_in_tl h
-            exact List.Mem.tail _ b_in_sub
-        case inr h =>
-          intro b b_in_l ba
-          cases b_in_l with
-          | head _ =>
-            simp [true_and, ba]
-            split <;> exact List.Mem.head _
-          | tail _ h =>
+      theorem Preorder.Totalizer.leClosure.aux_above_post_mpr
+        (self : P.Totalizer)
+        {a : α} {l : List α}
+      : ∀ b ∈ l, self.le a b → b ∈ aux self a true l := by
+        induction l with
+        | nil =>
+          intro b _
+          contradiction
+        | cons hd tl ih =>
+          simp only [aux]
+          split
+          case inl h =>
+            intro b b_in_res
+            cases b_in_res with
+            | head tl =>
+              intro
+              exact List.Mem.head _
+            | tail hd b_in_tl =>
+              intro h
+              let b_in_sub := ih b b_in_tl h
+              exact List.Mem.tail _ b_in_sub
+          case inr h =>
+            simp only [not_and_or, false_or] at h
+            intro b b_in_l h_b
             simp
-            split
-            <;> try apply List.Mem.tail
-            · exact ih b h ba
-            · exact ih b h ba
+            cases b_in_l with
+            | head _ => contradiction
+            | tail _ h =>
+              exact ih b h h_b
 
-    theorem Preorder.Totalizer.leClosure_below_post_mp
+      theorem Preorder.Totalizer.leClosure_above_post_mp
+        [Finite α]
+        (self : P.Totalizer)
+        {a : α}
+      : ∀ b ∈ self.leClosure a true, self.le a b :=
+        leClosure.aux_above_post_mp self
+
+      theorem Preorder.Totalizer.leClosure_above_post_mpr
+        [F : Finite α]
+        (self : P.Totalizer)
+        {a : α}
+      : ∀ b, self.le a b → b ∈ self.leClosure a true :=
+        fun b h_b =>
+          Totalizer.leClosure.aux_above_post_mpr self b (F.all_in_elems b) h_b
+
+      @[simp]
+      theorem Preorder.Totalizer.leClosure_above_post
+        [Finite α]
+        (self : P.Totalizer)
+        {a : α}
+      : ∀ b, b ∈ self.leClosure a true ↔ self.le a b :=
+        fun b => ⟨
+          self.leClosure_above_post_mp b,
+          self.leClosure_above_post_mpr b
+        ⟩
+    end above
+
+
+
+    section below
+      theorem Preorder.Totalizer.leClosure.aux_below_post_mp
+        (self : P.Totalizer)
+        {a : α} {l : List α}
+      : ∀ b ∈ aux self a false l, self.le b a := by
+        induction l with
+        | nil =>
+          intro b _
+          contradiction
+        | cons hd tl ih =>
+          simp [aux]
+          split
+          case inl h =>
+            intro b b_in_res
+            cases b_in_res with
+            | head tl => exact h
+            | tail hd b_in_tl =>
+              exact ih b b_in_tl
+          case inr h =>
+            exact ih
+
+      theorem Preorder.Totalizer.leClosure.aux_below_post_mpr
+        (self : P.Totalizer)
+        {a : α} {l : List α}
+      : ∀ b ∈ l, self.le b a → b ∈ aux self a false l := by
+        induction l with
+        | nil =>
+          intro b _
+          contradiction
+        | cons hd tl ih =>
+          simp only [aux]
+          split
+          case inl h =>
+            intro b b_in_res
+            cases b_in_res with
+            | head tl =>
+              intro
+              exact List.Mem.head _
+            | tail hd b_in_tl =>
+              intro h
+              let b_in_sub := ih b b_in_tl h
+              exact List.Mem.tail _ b_in_sub
+          case inr h =>
+            intro b b_in_l ba
+            cases b_in_l with
+            | head _ =>
+              simp [true_and, ba]
+              split <;> exact List.Mem.head _
+            | tail _ h =>
+              simp
+              split
+              <;> try apply List.Mem.tail
+              · exact ih b h ba
+              · exact ih b h ba
+
+      theorem Preorder.Totalizer.leClosure_below_post_mp
+        [Finite α]
+        (self : P.Totalizer)
+        {a : α}
+      : ∀ b ∈ self.leClosure a false, self.le b a :=
+        leClosure.aux_below_post_mp self
+
+      theorem Preorder.Totalizer.leClosure_below_post_mpr
+        [F : Finite α]
+        (self : P.Totalizer)
+        {a : α}
+      : (∀ b, self.le b a → b ∈ self.leClosure a false) :=
+        fun b h_b =>
+          Preorder.Totalizer.leClosure.aux_below_post_mpr self b (F.all_in_elems b) h_b
+
+      @[simp]
+      theorem Preorder.Totalizer.leClosure_below_post
+        [Finite α]
+        (self : P.Totalizer)
+        {a : α}
+      : (∀ b, b ∈ self.leClosure a false ↔ self.le b a) :=
+        fun b => ⟨
+          self.leClosure_below_post_mp b,
+          self.leClosure_below_post_mpr b
+        ⟩
+    end below
+
+
+    theorem Preorder.Totalizer.Raw.Legit.for_cons
       [Finite α]
-      (self : P.Totalizer)
-      {a : α}
-    : ∀ b ∈ self.leClosure a false, self.le b a :=
-      leClosure.aux_below_post_mp self
-
-    theorem Preorder.Totalizer.leClosure_below_post_mpr
-      [F : Finite α]
-      (self : P.Totalizer)
-      {a : α}
-    : (∀ b, self.le b a → b ∈ self.leClosure a false) :=
-      fun b h_b =>
-        Preorder.Totalizer.leClosure.aux_below_post_mpr self b (F.all_in_elems b) h_b
-
-    @[simp]
-    theorem Preorder.Totalizer.leClosure_below_post
-      [Finite α]
-      (self : P.Totalizer)
-      {a : α}
-    : (∀ b, b ∈ self.leClosure a false ↔ self.le b a) :=
-      fun b => ⟨
-        self.leClosure_below_post_mp b,
-        self.leClosure_below_post_mpr b
-      ⟩
-  end below
-
-
-  def Preorder.Totalizer.Raw.Legit.for_cons
-    [Finite α]
-    {P : Preorder α}
-    {self : P.Totalizer}
-    {not_x_y : ¬ self.le x y}
-  : (Raw.cons
-      (self.leClosure x false)
-      x y
-      (self.leClosure y true) 
-      self.raw
-    ).Legit
-  := by
-    apply Legit.cons
-    <;> try assumption
-    · exact leClosure_below_post (α := α) _
-    · exact leClosure_above_post (α := α) _
-    · exact self.legit
+      {P : Preorder α}
+      {self : P.Totalizer}
+      {not_x_y : ¬ self.le x y}
+    : (Raw.cons
+        (self.leClosure x false)
+        x y
+        (self.leClosure y true) 
+        self.raw
+      ).Legit
+    := by
+      apply Legit.cons
+      <;> try assumption
+      · exact leClosure_below_post (α := α) _
+      · exact leClosure_above_post (α := α) _
+      · exact self.legit
+  end leClosure
 
 
 
+  /-! ## Totalize a pair of incomparable elements for a complement -/
   section addCmpl
     def Preorder.Totalizer.addCmpl
       [_F : Finite α]
@@ -1014,6 +1082,7 @@ section
 
 
 
+  /-! ## Totalize all incomparable pairs `(a, b)` for some `a` for a complement -/
   section addCmplFor
     def Preorder.Totalizer.addCmplFor
       [F : Finite α]
@@ -1182,6 +1251,7 @@ section
 
 
 
+  /-! ## Totalize all incomparable pairs of elements for a complement -/
   section addMissingCmpl
     def Preorder.Totalizer.addMissingCmpl
       [F : Finite α]
@@ -1338,6 +1408,7 @@ section
 
 
 
+  /-! ## Totalize two incomparable elements by adding a `≤`-relation in both direction -/
   section addBoth
     def Preorder.Totalizer.add
       [_F : Finite α]
@@ -1427,6 +1498,7 @@ section
 
 
 
+  /-! ## Totalize all incomparable pairs `(a, b)` given some `a` -/
   section addFor
     def Preorder.Totalizer.addFor
       [F : Finite α]
@@ -1510,6 +1582,7 @@ section
 
 
 
+  /-! ## Totalize all incomparable pairs -/
   section addMissing
     def Preorder.Totalizer.addMissing
       [F : Finite α]
@@ -1573,32 +1646,9 @@ section
 
 
 
+  /-! ## Top-level totalization functions and properties -/
   section top_level
-    def Preorder.totalize
-      [F : Finite α]
-      (P : Preorder α)
-    : Order α :=
-      let totalizer :=
-        Totalizer.empty P
-      let totalized :=
-        totalizer.addMissing
-      
-      {
-        toPreorder := totalized.toPreorder,
-        le_total' := by
-          intro a b
-          apply totalizer.addMissing_post
-      }
-    
-    theorem Preorder.totalize_subrel
-      [F : Finite α]
-      (P : Preorder α)
-    : P ⊆ P.totalize := by
-      apply ProtoOrder.subrel_trans (Totalizer.empty_subrel P)
-      apply Totalizer.addMissing_subrel
-
-
-
+    /-- Top-level totalization, with complement. -/
     def Preorder.totalizeWith
       [F : Finite α]
       (P : Preorder α)
@@ -1635,143 +1685,108 @@ section
         exact Totalizer.empty_Sane P C
       apply ProtoOrder.subrel_trans h
       apply Totalizer.addMissing_subrel
+
+
+
+    /-- Top-level totalization, without a complement. -/
+    def Preorder.totalize
+      [F : Finite α]
+      (P : Preorder α)
+    : Order α :=
+      let totalizer :=
+        Totalizer.empty P
+      let totalized :=
+        totalizer.addMissing
+      
+      {
+        toPreorder := totalized.toPreorder,
+        le_total' := by
+          intro a b
+          apply totalizer.addMissing_post
+      }
+    
+    theorem Preorder.totalize_subrel
+      [F : Finite α]
+      (P : Preorder α)
+    : P ⊆ P.totalize := by
+      apply ProtoOrder.subrel_trans (Totalizer.empty_subrel P)
+      apply Totalizer.addMissing_subrel
   end top_level
 end
 
 
 
-theorem lemma_1_f
-  [Finite α]
-:
-  ∀ (P : Preorder α),
-    ∃ (O : Order α), P ⊆ O
-:= by
-  intro P
-  exists P.totalize
-  apply P.totalize_subrel
-
-
-
-theorem lemma_1_g
-  [Finite α]
-:
-  ∀ (P : Preorder α) (C : P.Complement),
-    ∃ (O : Order α), P ⊆ O ∧ C.extended ⊆ O
-:= by
-  intro P C
-  exists P.totalizeWith C
-  constructor
-  · apply P.totalizeWith_subrel
-  · apply P.totalizeWith_subrelCmpl
-
-
-
-/-- Compatibility of a preorder with another preorder, noted `P₁ ≈ P₂`. -/
-abbrev Preorder.compatible (P₁ P₂ : Preorder α) : Prop :=
-  ∃ (O : Order α), P₁ ⊆ O ∧ P₂ ⊆ O
-
-instance : HasEquiv (Preorder α) where
-  Equiv := Preorder.compatible
-
-
-
-theorem lemma_1_h
-  [Finite α]
-: ∀ (P₁ P₂ : Preorder α), P₁ ⊆ P₂ → P₁ ≈ P₂ := by
-  intro P₁ P₂ P₁_P₂
-  let O := P₂.totalize
-  let P₂_O := P₂.totalize_subrel
-  exists O
-  constructor
-  · apply ProtoOrder.subrel_trans P₁_P₂ P₂_O
-  · exact P₂_O
-
-
-
-theorem lemma_1_i
-  [Finite α]
-  (P : Preorder α)
-  {S : Set α}
-  [∀ a, Decidable (a ∈ S)]
-:
-  (∀ x y, x ∈ S → y ∈ S → (P.le x y ↔ x = y))
-  → (P' : Preorder S)
-  → P ≈ P'.extended
-:= by
-  intro incmp P'
-  let O' := P'.totalize
-  let C' :=
-    Preorder.Complement.mk S inferInstance incmp O'
-  let O := P.totalizeWith C'
-  exists O
-  constructor
-  · apply P.totalizeWith_subrel
-  · let C'_O : C'.extended ⊆ O :=
-      P.totalizeWith_subrelCmpl C'
-    apply ProtoOrder.subrel_trans _ C'_O
-    apply Preorder.extended_subrel
-    apply P'.totalize_subrel
-
-
-
-section genLt
-  variable
-    {α : Type u}
+/-! ## Actual lemmas from the book -/
+section lemmas
+  theorem lemma_1_f
     [Finite α]
-    [DecidableEq α]
-    {a b : α}
+  :
+    ∀ (P : Preorder α),
+      ∃ (O : Order α), P ⊆ O
+  := by
+    intro P
+    exists P.totalize
+    apply P.totalize_subrel
 
-  def ProtoOrder.genLt (_a_ne_b : a ≠ b) : ProtoOrder α where
-    le x y :=
-      (x = a ∧ y = b) ∨ x = y
-    toDecidableRel := by
-      simp [DecidableRel]
-      exact inferInstance
-    toDecidableEq :=
-      inferInstance
 
-  def ProtoOrder.genLt_post {a_ne_b : a ≠ b} : ProtoOrder.genLt a_ne_b |>.lt a b := by
-    simp [ProtoOrder.genLt]
-    intro h
-    cases h with
-    | inl h =>
-      rw [h.left] at a_ne_b
-      contradiction
-    | inr h =>
-      rw [h] at a_ne_b
-      contradiction
 
-  def Preorder.genLt (a_ne_b : a ≠ b) : Preorder α where
-    toProtoOrder := ProtoOrder.genLt a_ne_b
-    le_refl' x := by
-      simp [ProtoOrder.toLE, LE.le, ProtoOrder.genLt]
-    le_trans' x y z := by
-      simp [ProtoOrder.toLE, LE.le, ProtoOrder.genLt]
-      intro h h'
-      cases h <;> cases h'
-      case inl.inl h h' =>
-        exact Or.inl ⟨h.left, h'.right⟩
-      case inr.inr h h' =>
-        simp [h, h']
-      case inl.inr h h' =>
-        rw [← h', h.left, h.right]
-        exact Or.inl ⟨rfl, rfl⟩
-      case inr.inl h h' =>
-        rw [h, h'.left, h'.right]
-        exact Or.inl ⟨rfl, rfl⟩
+  theorem lemma_1_g
+    [Finite α]
+  :
+    ∀ (P : Preorder α) (C : P.Complement),
+      ∃ (O : Order α), P ⊆ O ∧ C.extended ⊆ O
+  := by
+    intro P C
+    exists P.totalizeWith C
+    constructor
+    · apply P.totalizeWith_subrel
+    · apply P.totalizeWith_subrelCmpl
 
-  def Preorder.genLt_post (a_ne_b : a ≠ b) : Preorder.genLt a_ne_b |>.lt a b :=
-    ProtoOrder.genLt_post
 
-  def Order.genLt (a_ne_b : a ≠ b) : Order α :=
-    let P := Preorder.genLt a_ne_b
-    P.totalize
-  
-  -- set_option pp.notation false in
-  -- set_option pp.explicit true in
-  theorem Order.genLt_post (a_ne_b : a ≠ b) : (Order.genLt a_ne_b).lt a b := by
-    let ⟨a_le_b, h⟩ :=
-      (Preorder.genLt a_ne_b).totalize_subrel a b (Preorder.genLt_post a_ne_b).left
-    constructor ; exact a_le_b
-    exact h (Preorder.genLt_post a_ne_b).right
-end genLt
+
+  /-- Compatibility of a preorder with another preorder, noted `P₁ ≈ P₂`. -/
+  abbrev Preorder.compatible (P₁ P₂ : Preorder α) : Prop :=
+    ∃ (O : Order α), P₁ ⊆ O ∧ P₂ ⊆ O
+
+  instance : HasEquiv (Preorder α) where
+    Equiv := Preorder.compatible
+
+
+
+  theorem lemma_1_h
+    [Finite α]
+  : ∀ (P₁ P₂ : Preorder α), P₁ ⊆ P₂ → P₁ ≈ P₂ := by
+    intro P₁ P₂ P₁_P₂
+    let O := P₂.totalize
+    let P₂_O := P₂.totalize_subrel
+    exists O
+    constructor
+    · apply ProtoOrder.subrel_trans P₁_P₂ P₂_O
+    · exact P₂_O
+
+
+
+  theorem lemma_1_i
+    [Finite α]
+    (P : Preorder α)
+    {S : Set α}
+    [∀ a, Decidable (a ∈ S)]
+  :
+    (∀ x y, x ∈ S → y ∈ S → (P.le x y ↔ x = y))
+    → (P' : Preorder S)
+    → P ≈ P'.extended
+  := by
+    intro incmp P'
+    let O' := P'.totalize
+    let C' :=
+      Preorder.Complement.mk S inferInstance incmp O'
+    let O := P.totalizeWith C'
+    exists O
+    constructor
+    · apply P.totalizeWith_subrel
+    · let C'_O : C'.extended ⊆ O :=
+        P.totalizeWith_subrelCmpl C'
+      apply ProtoOrder.subrel_trans _ C'_O
+      apply Preorder.extended_subrel
+      apply P'.totalize_subrel
+end lemmas
