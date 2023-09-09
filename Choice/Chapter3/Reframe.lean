@@ -1,70 +1,8 @@
-import Choice.Chapter2
+import Choice.Chapter1
 
 
 
 namespace Choice
-
-
-
--- section keep_xy_force_y_lt_z
---   abbrev Order.keep_xy_force_y_lt_z
---     [Finite α]
---     (O : Order α)
---     (x y z : α)
---     (x_ne_y : x ≠ y)
---     (x_ne_z : x ≠ z)
---     (y_ne_z : y ≠ z)
---   : Preorder α where
---     le a b :=
---       if a = x ∧ b = y then
---         O.le a b
---       else if a = y ∧ b = x then
---         O.le b a
---       else if a = y ∧ b = z then
---         True
---       else if a = z ∧ b = y then
---         False
---       else
---         a = b
-
---     toDecidableRel := by
---       simp [DecidableRel, LE.le]
---       intro a b
---       exact inferInstance
---     toDecidableEq := inferInstance
-
---     le_refl' a := by
---       simp [LE.le]
---       if h_ax : a = x then
---         simp [h_ax, x_ne_y]
---       else if h_ay : a = y then
---         simp [h_ay, x_ne_y.symm, y_ne_z]
---       else
---         simp [h_ax, h_ay]
-    
---     le_trans' a b c := by
---       simp [LE.le]
---       if h_ax : a = x then
---         simp [h_ax, x_ne_y, x_ne_z]
---         if h_bx : b = x then
---           simp [h_bx, x_ne_y]
---           split
---           · intro ; assumption
---           · simp [x_ne_z]
---         else if h_by : b = y then
---           simp [h_bx, h_by, x_ne_y.symm, y_ne_z]
---           intro xy
---           split
---           case inl h_cx => simp [h_cx]
---           case inr h_cx =>
---             split
---             case inl h_cz =>
---               simp [h_cz]
---             sorry
---       else
---         sorry
-      
--- end keep_xy_force_y_lt_z
 
 
 
